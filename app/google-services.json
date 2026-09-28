@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "357806559864",
+    "project_id": "bakebliss-bakery",
+    "storage_bucket": "bakebliss-bakery.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:357806559864:android:ec26242f66004940bfd38d",
+        "android_client_info": {
+          "package_name": "com.example.bakebliss_bakery"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6ekOgPNpCIYBrHPkcdeYwE6Ktpp8dBrc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

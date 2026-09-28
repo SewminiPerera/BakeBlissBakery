@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_home_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5"
+    tools:context=".MainActivity">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_navigation">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="20dp">
+
+            <LinearLayout
+                android:id="@+id/header_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="20dp">
+
+                <ImageView
+                    android:id="@+id/imgTopProfile"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/ic_dummy_profile"
+                    android:background="@drawable/bg_circle"
+                    android:clipToOutline="true"
+                    android:scaleType="centerCrop"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="15dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Welcome Back,"
+                        android:textColor="#757575"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvWelcomeName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="User"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/imgNotification"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:src="@drawable/ic_notification"
+                    android:background="@drawable/bg_circle"
+                    android:padding="10dp"
+                    app:tint="#FF5722"/>
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/etSearchFood"
+                android:layout_width="match_parent"
+                android:layout_height="55dp"
+                android:layout_marginHorizontal="20dp"
+                android:background="@drawable/bg_rounded_edittext"
+                android:drawableStart="@android:drawable/ic_menu_search"
+                android:drawablePadding="10dp"
+                android:hint="Search any foods..."
+                android:paddingHorizontal="20dp"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textSize="14sp"/>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="20dp"
+                app:cardCornerRadius="20dp"
+                app:cardBackgroundColor="#FF5722"
+                app:cardElevation="5dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/tvPromoSub"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Get 50% off Today!"
+                        android:textColor="#FFCCBC"
+                        android:textSize="14sp"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        android:layout_marginTop="20dp"
+                        android:layout_marginStart="20dp"/>
+
+                    <TextView
+                        android:id="@+id/tvPromoTitle"
+                        android:layout_width="160dp"
+                        android:layout_height="wrap_content"
+                        android:text="Hot Deal of the Month"
+                        android:textColor="@color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        app:layout_constraintTop_toBottomOf="@id/tvPromoSub"
+                        app:layout_constraintStart_toStartOf="parent"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginStart="20dp"/>
+
+                    <Button
+                        android:id="@+id/btnShopNow"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="15dp"
+                        android:layout_marginBottom="15dp"
+                        android:backgroundTint="@color/white"
+                        android:text="Shop Now"
+                        android:textColor="#FF5722"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent" />
+
+                    <ImageView
+                        android:layout_width="140dp"
+                        android:layout_height="140dp"
+                        android:layout_marginEnd="10dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/promo_banner"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@+id/tvPromoTitle"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </androidx.cardview.widget.CardView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="25dp"
+                android:layout_marginHorizontal="20dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="Categories"
+                    android:textColor="@color/black"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvSeeAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="See all"
+                    android:textColor="#757575"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginTop="15dp"
+                android:paddingHorizontal="15dp"
+                android:clipToPadding="false">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvCatAll"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="All"
+                        android:textColor="@color/white"
+                        android:background="@drawable/bg_rounded_edittext"
+                        android:backgroundTint="#FF5722"
+                        android:gravity="center"
+                        android:paddingHorizontal="25dp"
+                        android:layout_marginEnd="10dp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:id="@+id/tvCatBurger"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="🍔 Burger"
+                        android:textColor="@color/black"
+                        android:background="@drawable/bg_rounded_edittext"
+                        android:gravity="center"
+                        android:paddingHorizontal="20dp"
+                        android:layout_marginEnd="10dp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:id="@+id/tvCatPizza"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="🍕 Pizza"
+                        android:textColor="@color/black"
+                        android:background="@drawable/bg_rounded_edittext"
+                        android:gravity="center"
+                        android:paddingHorizontal="20dp"
+                        android:layout_marginEnd="10dp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:id="@+id/tvCatRice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="🍚 Rice"
+                        android:textColor="@color/black"
+                        android:background="@drawable/bg_rounded_edittext"
+                        android:gravity="center"
+                        android:paddingHorizontal="20dp"
+                        android:layout_marginEnd="10dp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_view_food"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:paddingHorizontal="15dp"
+                tools:listitem="@layout/item_food" />
+
+            <TextView
+                android:id="@+id/tvNoFoodFound"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:gravity="center"
+                android:text="No food items found 😕\nTry searching something else!"
+                android:textColor="#757575"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:itemIconTint="#FF5722"
+        app:itemTextColor="#FF5722"
+        app:labelVisibilityMode="labeled"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:menu="@menu/bottom_nav_menu" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
