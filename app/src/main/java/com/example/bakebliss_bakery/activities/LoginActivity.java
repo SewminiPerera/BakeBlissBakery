@@ -66,11 +66,15 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         // Configure Google Sign-In
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
-                .requestEmail()
-                .build();
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+        int defaultClientIdRes = getResources().getIdentifier("default_web_client_id", "string", getPackageName());
+        String webClientId = defaultClientIdRes != 0 ? getString(defaultClientIdRes) : "";
+
+        GoogleSignInOptions.Builder gsoBuilder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail();
+        if (!TextUtils.isEmpty(webClientId)) {
+            gsoBuilder.requestIdToken(webClientId);
+        }
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gsoBuilder.build());
 
         // Bind views
         etEmail  = findViewById(R.id.etLoginUsername);
@@ -146,6 +150,11 @@ public class LoginActivity extends AppCompatActivity {
 
     // ─── Google Sign-In Flow ────────────────────────────────────────────────
     private void signInWithGoogle() {
+        int defaultClientIdRes = getResources().getIdentifier("default_web_client_id", "string", getPackageName());
+        if (defaultClientIdRes == 0) {
+            Toast.makeText(this, "Google Sign-In is not configured yet. Please enable Google in Firebase Console and update google-services.json.", Toast.LENGTH_LONG).show();
+            return;
+        }
         Intent signInIntent = mGoogleSignInClient.getSignInIntent();
         startActivityForResult(signInIntent, RC_SIGN_IN);
     }
