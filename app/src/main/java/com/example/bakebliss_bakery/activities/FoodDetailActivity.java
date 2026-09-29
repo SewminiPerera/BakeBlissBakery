@@ -66,16 +66,16 @@ public class FoodDetailActivity extends AppCompatActivity {
             imgDetailFood.setImageResource(getImageResource(name));
         }
 
-        String finalDescription = "";
-
-        String baseDescription = "A perfect blend of fresh, high-quality ingredients.\n" +
-                "Prepared with love for a unique and rich taste experience.\n" +
-                "Perfect for any meal, this dish guarantees satisfaction.";
+        String finalDescription;
 
         if (descFromIntent != null && descFromIntent.contains("Hot Deal Promo Applied!")) {
-            finalDescription = baseDescription + "\n\n" + descFromIntent;
+            finalDescription = descFromIntent;
+        } else if (descFromIntent != null && !descFromIntent.isEmpty()) {
+            finalDescription = descFromIntent;
         } else {
-            finalDescription = baseDescription;
+            finalDescription = "A perfect blend of fresh, high-quality ingredients.\n" +
+                    "Prepared with love for a unique and rich taste experience.\n" +
+                    "Perfect for any meal, this dish guarantees satisfaction.";
         }
 
         tvDesc.setText(finalDescription);

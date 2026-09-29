@@ -217,10 +217,10 @@
                         android:textStyle="bold"/>
 
                     <TextView
-                        android:id="@+id/tvCatPizza"
+                        android:id="@+id/tvCatPastry"
                         android:layout_width="wrap_content"
                         android:layout_height="40dp"
-                        android:text="🍕 Pizza"
+                        android:text="🥐 Pastry"
                         android:textColor="@color/black"
                         android:background="@drawable/bg_rounded_edittext"
                         android:gravity="center"
@@ -229,10 +229,34 @@
                         android:textStyle="bold"/>
 
                     <TextView
-                        android:id="@+id/tvCatRice"
+                        android:id="@+id/tvCatCake"
                         android:layout_width="wrap_content"
                         android:layout_height="40dp"
-                        android:text="🍚 Rice"
+                        android:text="🎂 Cake"
+                        android:textColor="@color/black"
+                        android:background="@drawable/bg_rounded_edittext"
+                        android:gravity="center"
+                        android:paddingHorizontal="20dp"
+                        android:layout_marginEnd="10dp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:id="@+id/tvCatBun"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="🫓 Bun"
+                        android:textColor="@color/black"
+                        android:background="@drawable/bg_rounded_edittext"
+                        android:gravity="center"
+                        android:paddingHorizontal="20dp"
+                        android:layout_marginEnd="10dp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:id="@+id/tvCatBeverage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="🧋 Beverage"
                         android:textColor="@color/black"
                         android:background="@drawable/bg_rounded_edittext"
                         android:gravity="center"

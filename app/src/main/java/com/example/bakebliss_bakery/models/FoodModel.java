@@ -5,13 +5,15 @@ public class FoodModel {
     private String name;
     private String description;
     private double price;
+    private String category;
 
     // Constructor to initialize the FoodModel object
-    public FoodModel(int id, String name, String description, double price) {
+    public FoodModel(int id, String name, String description, double price, String category) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.price = price;
+        this.category = category;
     }
 
     // Getter methods to access the private variables outside this class
@@ -31,6 +33,10 @@ public class FoodModel {
         return price;
     }
 
+    public String getCategory() {
+        return category;
+    }
+
     // --- Setter methods to dynamically update the name and price (Required for Discounts) ---
     public void setName(String name) {
         this.name = name;
@@ -38,5 +44,9 @@ public class FoodModel {
 
     public void setPrice(double price) {
         this.price = price;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 }

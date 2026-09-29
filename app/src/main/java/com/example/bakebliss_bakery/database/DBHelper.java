@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DBHelper extends SQLiteOpenHelper {
 
     public static final String DBNAME = "FoodApp.db";
-    public static final int DBVERSION = 2;
+    public static final int DBVERSION = 3;
 
     // Table Names
     public static final String TABLE_USERS = "users";
@@ -42,7 +42,8 @@ public class DBHelper extends SQLiteOpenHelper {
                 "name TEXT, " +
                 "description TEXT, " +
                 "price DOUBLE, " +
-                "image_resource INTEGER)"); // We can store drawable ID for simplicity
+                "category TEXT, " +
+                "image_resource INTEGER)");
 
         // Create Orders Table WITH FOREIGN KEY
         MyDB.execSQL("create Table " + TABLE_ORDERS + "(" +
@@ -75,31 +76,71 @@ public class DBHelper extends SQLiteOpenHelper {
             MyDB.execSQL("ALTER TABLE " + TABLE_USERS + " ADD COLUMN address TEXT DEFAULT 'Not Set'");
             MyDB.execSQL("ALTER TABLE " + TABLE_USERS + " ADD COLUMN profile_image TEXT DEFAULT ''");
         }
+        if (oldVersion < 3) {
+            // Drop old food table and re-seed with new categories
+            MyDB.execSQL("DROP TABLE IF EXISTS " + TABLE_FOOD);
+            MyDB.execSQL("create Table " + TABLE_FOOD + "(" +
+                    "id INTEGER primary key autoincrement, " +
+                    "name TEXT, " +
+                    "description TEXT, " +
+                    "price DOUBLE, " +
+                    "category TEXT, " +
+                    "image_resource INTEGER)");
+            seedFoodItems(MyDB);
+        }
     }
 
-    // Method to insert initial 20 food data items
+    // Method to insert all food items by category
     private void seedFoodItems(SQLiteDatabase db) {
-        // Sri Lankan and Popular Items with prices in Rs.
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Chicken Kottu', 'Spicy Sri Lankan street food with chicken', 850.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Cheese Kottu', 'Creamy cheese kottu with roasted chicken', 1200.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Chicken Fried Rice', 'Basmati rice wok-tossed with chicken and veggies', 900.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Nasi Goreng', 'Indonesian style spicy rice topped with a fried egg', 1100.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Chicken Biryani', 'Aromatic spiced rice served with chicken and egg', 1350.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('String Hoppers (10 pcs)', 'Served with dhal, coconut sambol and chicken curry', 450.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Plain Hoppers (5 pcs)', 'Crispy plain hoppers served with lunu miris', 250.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Egg Hopper', 'Crispy hopper with a soft baked egg inside', 100.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Lamprais', 'Traditional Dutch burgher meal wrapped in banana leaf', 1500.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Roast Paan & Curry', 'Wood-fired roast bread with spicy pork or chicken curry', 650.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Chicken Burger', 'Crispy chicken patty with fresh lettuce and mayo', 650.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Double Cheese Burger', 'Double beef patty with melted cheese and pickles', 1250.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Spicy Chicken Sub', 'Footlong submarine sandwich with spicy chicken fillings', 950.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('BBQ Chicken Pizza', 'Large pizza topped with BBQ chicken, onions and cheese', 2200.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Margherita Pizza', 'Classic medium pizza with fresh tomatoes and mozzarella', 1500.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Fish Roll', 'Crispy crumbed roll stuffed with spicy fish and potato', 120.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Vegetable Roti', 'Spicy vegetable mix folded into a triangular flatbread', 80.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Chicken Samosa', 'Crispy pastry filled with minced chicken and peas', 100.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Isso Vade', 'Crispy lentil patty topped with spicy fried prawns', 150.00)");
-        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price) VALUES ('Chocolate Biscuit Pudding', 'Classic Sri Lankan dessert layered with chocolate', 400.00)");
+        // ===== BURGER =====
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Chicken Burger', 'A juicy, crispy-fried chicken patty layered with fresh lettuce, ripe tomatoes, creamy mayo, and pickles in a toasted sesame bun. A timeless classic that satisfies every craving.', 650.00, 'Burger')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Double Cheese Burger', 'Two flame-grilled beef patties stacked high with double layers of melted cheddar cheese, caramelized onions, mustard, and ketchup in a brioche bun. Bold, hearty, and irresistible.', 1250.00, 'Burger')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Cheese Burger', 'A perfectly seasoned beef patty crowned with a thick slice of melted American cheese, crisp lettuce, fresh tomato, and tangy special sauce in a soft toasted bun.', 850.00, 'Burger')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Crispy Chicken Burger', 'Golden, crunchy double-breaded chicken fillet tossed in a buttery honey glaze, topped with coleslaw and sriracha aioli in a soft brioche bun. Crunchy on the outside, tender inside.', 1050.00, 'Burger')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Classic Beef Burger', 'A hand-formed prime beef patty grilled to perfection with classic toppings — fresh lettuce, ripe tomatoes, dill pickles, and our signature house sauce, all in a lightly toasted bun.', 950.00, 'Burger')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Spicy Chicken Burger', 'Fiery marinated chicken fillet coated in a bold chilli spice blend, topped with jalapeños, pepper jack cheese, and cooling ranch drizzle. For those who love the heat!', 850.00, 'Burger')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('BBQ Beef Burger', 'Smoky BBQ-glazed beef patty loaded with crispy onion rings, bacon strips, melted gouda, and tangy BBQ sauce. A backyard BBQ experience in every bite.', 1150.00, 'Burger')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Grilled Chicken Burger', 'Tender char-grilled chicken breast marinated in herbs and lemon, served with avocado slices, mixed greens, and a light yogurt dressing. Healthy never tasted this good.', 1100.00, 'Burger')");
+
+        // ===== PASTRY =====
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Chicken Pastry', 'Flaky golden puff pastry filled with a savory blend of spiced minced chicken, herbs, and sautéed onions. Freshly baked and served warm — a perfect snack anytime.', 200.00, 'Pastry')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Vegetable Pastry', 'A light, crispy pastry shell packed with a delicious mix of seasoned garden vegetables including carrots, peas, potatoes, and bell peppers. A wholesome and satisfying treat.', 150.00, 'Pastry')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Fish Pastry', 'Buttery puff pastry filled with a flavorful blend of flaked fish, spiced potatoes, and fresh herbs. Golden-baked to perfection with a satisfying crunch in every bite.', 170.00, 'Pastry')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Beef Pastry', 'Rich and hearty puff pastry filled with slow-cooked spiced minced beef, caramelized onions, and herbs. A bolder, meat-lovers pastry baked to a beautiful golden brown.', 250.00, 'Pastry')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Egg Pastry', 'A delicate pastry shell cradling a perfectly set spiced egg filling with a hint of pepper and fresh herbs. Simple, satisfying, and great for breakfast or as a snack.', 150.00, 'Pastry')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Sausage Pastry', 'Crispy golden pastry wrapped snugly around a juicy, seasoned pork sausage. Classic comfort food baked fresh every day — great on its own or with a dipping sauce.', 150.00, 'Pastry')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Chicken & Cheese Pastry', 'Premium puff pastry generously filled with tender seasoned chicken and melted mozzarella cheese, creating the perfect gooey, savory combination in every flaky bite.', 350.00, 'Pastry')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Curry Pastry', 'A warm, aromatic pastry filled with a rich and fragrant curry blend of potatoes, spices, and tender pieces of meat. An exciting spiced twist on the traditional pastry.', 100.00, 'Pastry')");
+
+        // ===== CAKE =====
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Chocolate Fudge Cake', 'An indulgent, ultra-moist layered chocolate cake generously frosted with rich chocolate fudge ganache. Decorated with chocolate shavings — a chocoholic dream come true.', 2200.00, 'Cake')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Strawberry Cream Cake', 'Light and airy vanilla sponge layers filled and frosted with fresh whipped cream and ripe strawberries. Elegant, refreshing, and perfect for any celebration.', 2100.00, 'Cake')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Vanilla Dream Cake', 'A soft, fluffy vanilla chiffon cake with silky smooth vanilla buttercream frosting. Delicate pearl-white decorations make this a dreamy, timeless centerpiece.', 1500.00, 'Cake')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Red Velvet Cake', 'The iconic deep red velvet cake with a velvety, tender crumb, layered with luscious cream cheese frosting. A showstopping cake that looks and tastes absolutely stunning.', 3000.00, 'Cake')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Lemon Delight Cake', 'A zesty, sunshine-bright lemon sponge cake filled with tangy lemon curd and frosted with light lemon buttercream. Refreshing, vibrant, and perfectly balanced in sweetness.', 2000.00, 'Cake')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Caramel Crunch Cake', 'Decadent caramel sponge layers filled with salted caramel cream and topped with crunchy caramelized toffee shards. A sophisticated treat with the perfect contrast of textures.', 2500.00, 'Cake')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Mango Bliss Cake', 'Tropical mango mousse layered between moist vanilla sponge, topped with fresh mango coulis and coconut cream. A taste of paradise in every slice.', 1700.00, 'Cake')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Oreo Cream Cake', 'Luscious cookies and cream cake featuring Oreo-studded sponge layers, whipped Oreo cream filling, and a dark chocolate ganache drizzle with whole Oreo cookie decorations.', 2000.00, 'Cake')");
+
+        // ===== BUN =====
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Vegetable Bun', 'Soft, pillowy steamed bun filled with a deliciously seasoned mix of fresh vegetables including carrots, cabbage, and green onions. A light and wholesome everyday snack.', 100.00, 'Bun')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Fish Bun', 'A freshly baked soft bun generously filled with spicy flaked fish and potato filling, perfectly seasoned with herbs and spices. A flavorful Sri Lankan-style bakery favorite.', 120.00, 'Bun')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Sausage Bun', 'A soft, golden-baked bun wrapped around a juicy whole pork sausage with a streak of mustard and ketchup. Classic, quick, and always delicious.', 150.00, 'Bun')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Egg Bun', 'A fluffy baked bun filled with a perfectly seasoned spiced egg mixture. Simple, hearty, and full of flavor — a popular breakfast and snack-time staple.', 120.00, 'Bun')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Chocolate Bun', 'A soft, enriched sweet bun filled or swirled with rich chocolate filling. Slightly sweet with a tender crumb — an irresistible treat for all chocolate lovers.', 150.00, 'Bun')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Tea Bun', 'A classic simple soft bun, lightly sweetened with a golden crust — the perfect companion for your morning or evening cup of tea. Soft, plain, and comforting.', 50.00, 'Bun')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Cream Bun', 'A beautifully soft bun split open and filled with a generous dollop of lightly sweetened whipped cream. A bakery classic that never goes out of style.', 80.00, 'Bun')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Hotdog Bun', 'A premium soft hotdog roll filled with a juicy grilled sausage, topped with caramelized onions, mustard, ketchup, and relish. Street food satisfaction at its finest.', 250.00, 'Bun')");
+
+        // ===== BEVERAGE =====
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Iced Coffee', 'A bold, refreshing cold brew coffee poured over ice with a splash of milk and your choice of sweetness. Smooth, rich, and energizing — your perfect daily pick-me-up.', 700.00, 'Beverage')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Vanilla Milkshake', 'A thick and creamy classic vanilla milkshake blended with premium ice cream and topped with fresh whipped cream. Nostalgic, sweet, and endlessly satisfying.', 650.00, 'Beverage')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Chocolate Milkshake', 'Rich, velvety chocolate milkshake made with dark chocolate ice cream, blended to perfection and finished with whipped cream and chocolate syrup drizzle.', 800.00, 'Beverage')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Strawberry Milkshake', 'Fresh strawberries blended with creamy strawberry ice cream into a gorgeous pink shake, topped with whipped cream and a fresh strawberry garnish. Sweet, fruity, and fun.', 800.00, 'Beverage')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Bubble Tea', 'Creamy, chilled milk tea loaded with perfectly chewy tapioca pearls. Choose from a variety of flavors — taro, matcha, or classic brown sugar. A boba experience like no other.', 1000.00, 'Beverage')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Coca Cola', 'Ice-cold refreshing Coca-Cola served over crushed ice. The world\'s most iconic beverage — perfectly fizzy, sweet, and refreshing. Goes great with any meal.', 400.00, 'Beverage')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Sprite', 'Crisp, clean lemon-lime Sprite served ice cold. Refreshingly light and bubbly with a perfect citrus zing — the ideal thirst-quencher on a warm day.', 350.00, 'Beverage')");
+        db.execSQL("INSERT INTO " + TABLE_FOOD + " (name, description, price, category) VALUES ('Cream Soda', 'A delightfully sweet and creamy soda with a smooth vanilla-cream flavor. Light pink, effervescent, and nostalgic — a uniquely satisfying soft drink experience.', 350.00, 'Beverage')");
     }
 
     // Insert User Logic (Updated with Default empty fields for new columns)

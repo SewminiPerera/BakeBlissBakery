@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
     // UI Components for Search & Filtering
     EditText etSearchFood;
     TextView tvNoFoodFound;
-    TextView tvCatAll, tvCatBurger, tvCatPizza, tvCatRice, tvSeeAll;
+    TextView tvCatAll, tvCatBurger, tvCatPastry, tvCatCake, tvCatBun, tvCatBeverage, tvSeeAll;
     ImageView imgTopProfile; // NEW
 
     // Flag to prevent searching conflicts when clicking categories
@@ -231,8 +231,11 @@ public class MainActivity extends AppCompatActivity {
                 String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
                 String desc = cursor.getString(cursor.getColumnIndexOrThrow("description"));
                 double price = cursor.getDouble(cursor.getColumnIndexOrThrow("price"));
+                int catIdx = cursor.getColumnIndex("category");
+                String category = (catIdx != -1) ? cursor.getString(catIdx) : "";
+                if (category == null) category = "";
 
-                FoodModel food = new FoodModel(id, name, desc, price);
+                FoodModel food = new FoodModel(id, name, desc, price, category);
                 foodList.add(food);
                 originalFoodList.add(food);
             } while (cursor.moveToNext());
@@ -284,8 +287,10 @@ public class MainActivity extends AppCompatActivity {
     private void initializeCategoryViews() {
         tvCatAll = findViewById(R.id.tvCatAll);
         tvCatBurger = findViewById(R.id.tvCatBurger);
-        tvCatPizza = findViewById(R.id.tvCatPizza);
-        tvCatRice = findViewById(R.id.tvCatRice);
+        tvCatPastry = findViewById(R.id.tvCatPastry);
+        tvCatCake = findViewById(R.id.tvCatCake);
+        tvCatBun = findViewById(R.id.tvCatBun);
+        tvCatBeverage = findViewById(R.id.tvCatBeverage);
         tvSeeAll = findViewById(R.id.tvSeeAll);
     }
 
@@ -294,8 +299,10 @@ public class MainActivity extends AppCompatActivity {
         tvSeeAll.setOnClickListener(v -> filterCategory("All", tvCatAll));
 
         tvCatBurger.setOnClickListener(v -> filterCategory("Burger", tvCatBurger));
-        tvCatPizza.setOnClickListener(v -> filterCategory("Pizza", tvCatPizza));
-        tvCatRice.setOnClickListener(v -> filterCategory("Rice", tvCatRice));
+        tvCatPastry.setOnClickListener(v -> filterCategory("Pastry", tvCatPastry));
+        tvCatCake.setOnClickListener(v -> filterCategory("Cake", tvCatCake));
+        tvCatBun.setOnClickListener(v -> filterCategory("Bun", tvCatBun));
+        tvCatBeverage.setOnClickListener(v -> filterCategory("Beverage", tvCatBeverage));
     }
 
     private void filterCategory(String categoryName, TextView selectedView) {
@@ -312,12 +319,7 @@ public class MainActivity extends AppCompatActivity {
             filteredList.addAll(originalFoodList);
         } else {
             for (FoodModel food : originalFoodList) {
-                String name = food.getName().toLowerCase();
-                if (categoryName.equals("Burger") && (name.contains("burger") || name.contains("sub"))) {
-                    filteredList.add(food);
-                } else if (categoryName.equals("Pizza") && name.contains("pizza")) {
-                    filteredList.add(food);
-                } else if (categoryName.equals("Rice") && (name.contains("rice") || name.contains("goreng") || name.contains("biryani"))) {
+                if (categoryName.equalsIgnoreCase(food.getCategory())) {
                     filteredList.add(food);
                 }
             }
@@ -335,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateCategoryStyles(TextView selectedView) {
-        TextView[] allCategories = {tvCatAll, tvCatBurger, tvCatPizza, tvCatRice};
+        TextView[] allCategories = {tvCatAll, tvCatBurger, tvCatPastry, tvCatCake, tvCatBun, tvCatBeverage};
         for (TextView tv : allCategories) {
             tv.setBackgroundTintList(null);
             tv.setTextColor(Color.parseColor("#000000"));

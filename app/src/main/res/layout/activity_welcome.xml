@@ -30,9 +30,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:text="foodora"
+            android:text="Bake Bliss"
             android:textColor="@color/white"
-            android:textSize="58sp"
+            android:textSize="44sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -43,7 +43,7 @@
         android:layout_marginHorizontal="40dp"
         android:layout_marginBottom="40dp"
         android:gravity="center"
-        android:text="Your Ultimate App for Every Craving.\nAny Food, Anytime."
+        android:text="Your Ultimate Bakery for Every Craving.\nFresh Bakes, Anytime."
         android:textColor="#F5F5F5"
         android:textSize="14sp"
         app:layout_constraintBottom_toTopOf="@+id/btnGetStarted" />
