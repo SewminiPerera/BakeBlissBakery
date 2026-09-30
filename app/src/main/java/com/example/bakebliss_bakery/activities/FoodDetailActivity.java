@@ -116,19 +116,21 @@ public class FoodDetailActivity extends AppCompatActivity {
 
             String username = sessionManager.getUsername();
 
-            if(username != null) {
-                boolean isAdded = dbHelper.addToCart(username, name, basePrice, quantity);
+            if(username != null && !username.isEmpty()) {
+                btnAddToCart.setEnabled(false);
+                dbHelper.addToCart(username, name, basePrice, quantity, isAdded -> {
+                    btnAddToCart.setEnabled(true);
+                    if(isAdded) {
+                        Toast.makeText(FoodDetailActivity.this, quantity + "x " + name + " added to cart!", Toast.LENGTH_SHORT).show();
 
-                if(isAdded) {
-                    Toast.makeText(FoodDetailActivity.this, quantity + "x " + name + " added to cart!", Toast.LENGTH_SHORT).show();
+                        Intent cartIntent = new Intent(FoodDetailActivity.this, CartActivity.class);
+                        startActivity(cartIntent);
 
-                    Intent cartIntent = new Intent(FoodDetailActivity.this, CartActivity.class);
-                    startActivity(cartIntent);
-
-                    finish();
-                } else {
-                    Toast.makeText(FoodDetailActivity.this, "Failed to add to cart.", Toast.LENGTH_SHORT).show();
-                }
+                        finish();
+                    } else {
+                        Toast.makeText(FoodDetailActivity.this, "Failed to add to cart.", Toast.LENGTH_SHORT).show();
+                    }
+                });
             } else {
                 Toast.makeText(FoodDetailActivity.this, "Please login first!", Toast.LENGTH_SHORT).show();
             }

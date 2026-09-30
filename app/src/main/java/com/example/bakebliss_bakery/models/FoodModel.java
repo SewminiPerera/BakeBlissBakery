@@ -6,47 +6,74 @@ public class FoodModel {
     private String description;
     private double price;
     private String category;
+    private String documentId;
 
-    // Constructor to initialize the FoodModel object
+    public FoodModel() {
+    }
+
     public FoodModel(int id, String name, String description, double price, String category) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.price = price;
         this.category = category;
+        this.documentId = "";
     }
 
-    // Getter methods to access the private variables outside this class
+    public FoodModel(int id, String name, String description, double price, String category, String documentId) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.category = category;
+        this.documentId = documentId;
+    }
+
     public int getId() {
         return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getName() {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getDescription() {
         return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public double getPrice() {
         return price;
     }
 
-    public String getCategory() {
-        return category;
-    }
-
-    // --- Setter methods to dynamically update the name and price (Required for Discounts) ---
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public void setPrice(double price) {
         this.price = price;
     }
 
+    public String getCategory() {
+        return category;
+    }
+
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public String getDocumentId() {
+        return documentId;
+    }
+
+    public void setDocumentId(String documentId) {
+        this.documentId = documentId;
     }
 }

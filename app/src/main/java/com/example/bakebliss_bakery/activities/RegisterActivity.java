@@ -68,7 +68,7 @@ public class RegisterActivity extends AppCompatActivity {
             } else if (!pass.equals(confirmPass)) {
                 Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
             } else {
-                registerWithFirebase(username, email, pass);
+                registerWithFirebase(username, email, phone, pass);
             }
         });
 
@@ -81,7 +81,7 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
-    private void registerWithFirebase(String username, String email, String password) {
+    private void registerWithFirebase(String username, String email, String phone, String password) {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
@@ -90,15 +90,19 @@ public class RegisterActivity extends AppCompatActivity {
                                 .setDisplayName(username)
                                 .build();
 
-                        mAuth.getCurrentUser().updateProfile(profileUpdates)
-                                .addOnCompleteListener(profileTask -> {
-                                    // Cache the name locally
-                                    sessionManager.createLoginSession(username);
-                                    Toast.makeText(this, "Registration Successful! Please log in.", Toast.LENGTH_SHORT).show();
-                                    // Sign out so user can log in explicitly
-                                    mAuth.signOut();
-                                    finish();
-                                });
+                        if (mAuth.getCurrentUser() != null) {
+                            mAuth.getCurrentUser().updateProfile(profileUpdates);
+                        }
+
+                        // Save user profile details to Firestore
+                        com.example.bakebliss_bakery.database.DBHelper dbHelper =
+                                new com.example.bakebliss_bakery.database.DBHelper(RegisterActivity.this);
+                        dbHelper.saveUserProfile(username, email, phone, "Not Set", "", success -> {
+                            sessionManager.createLoginSession(username);
+                            Toast.makeText(this, "Registration Successful! Please log in.", Toast.LENGTH_SHORT).show();
+                            mAuth.signOut();
+                            finish();
+                        });
                     } else {
                         String errorMsg = task.getException() != null
                                 ? task.getException().getMessage()

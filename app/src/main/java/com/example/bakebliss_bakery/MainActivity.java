@@ -3,7 +3,6 @@ package com.example.bakebliss_bakery;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.res.ColorStateList;
-import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -77,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         dbHelper = new DBHelper(this); // Initialize DB First
+        dbHelper.seedFoodItemsIfNeeded(); // Seed initial food items to Firestore if collection is empty
 
         // --- SET DYNAMIC USERNAME AND PROFILE PIC IN HEADER ---
         TextView tvWelcomeName = findViewById(R.id.tvWelcomeName);
@@ -204,43 +204,33 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // --- Fetch Image from DB and Set in Home Screen Header ---
+    // --- Fetch Image from Firestore and Set in Home Screen Header ---
     private void loadProfilePicture(String username) {
-        Cursor cursor = dbHelper.getUserDetails(username);
-        if (cursor != null && cursor.moveToFirst()) {
-            int imgIndex = cursor.getColumnIndex("profile_image");
-            if(imgIndex != -1) {
-                String imgPath = cursor.getString(imgIndex);
-                if(imgPath != null && !imgPath.isEmpty()){
-                    try {
-                        imgTopProfile.setImageURI(Uri.parse(imgPath));
-                    } catch (Exception e) {
-                        imgTopProfile.setImageResource(R.mipmap.ic_launcher);
-                    }
+        dbHelper.getUserProfile(username, user -> {
+            if (user != null && user.getProfileImage() != null && !user.getProfileImage().isEmpty()) {
+                try {
+                    imgTopProfile.setImageURI(Uri.parse(user.getProfileImage()));
+                } catch (Exception e) {
+                    imgTopProfile.setImageResource(R.mipmap.ic_launcher);
                 }
+            } else {
+                imgTopProfile.setImageResource(R.mipmap.ic_launcher);
             }
-        }
-        if(cursor != null) cursor.close();
+        });
     }
 
     private void loadFoodData() {
-        Cursor cursor = dbHelper.getAllFoodItems();
-        if (cursor.moveToFirst()) {
-            do {
-                int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
-                String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
-                String desc = cursor.getString(cursor.getColumnIndexOrThrow("description"));
-                double price = cursor.getDouble(cursor.getColumnIndexOrThrow("price"));
-                int catIdx = cursor.getColumnIndex("category");
-                String category = (catIdx != -1) ? cursor.getString(catIdx) : "";
-                if (category == null) category = "";
-
-                FoodModel food = new FoodModel(id, name, desc, price, category);
-                foodList.add(food);
-                originalFoodList.add(food);
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
+        dbHelper.getAllFoodItems(list -> {
+            foodList.clear();
+            originalFoodList.clear();
+            if (list != null) {
+                foodList.addAll(list);
+                originalFoodList.addAll(list);
+            }
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+        });
     }
 
     // Real-time Search Listener

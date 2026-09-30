@@ -2,7 +2,6 @@ package com.example.bakebliss_bakery.activities;
 
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -143,38 +142,26 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void loadUserProfile(String username) {
-        Cursor cursor = dbHelper.getUserDetails(username);
+        dbHelper.getUserProfile(username, user -> {
+            if (user != null) {
+                tvProfileName.setText(user.getUsername() != null && !user.getUsername().isEmpty() ? user.getUsername() : username);
+                tvShowEmail.setText(user.getEmail());
+                tvShowPhone.setText(user.getPhone());
+                tvShowAddress.setText(user.getAddress());
 
-        if (cursor != null && cursor.moveToFirst()) {
-            String email = cursor.getString(cursor.getColumnIndexOrThrow("email"));
-            String phone = cursor.getString(cursor.getColumnIndexOrThrow("phone"));
-
-            int addressIndex = cursor.getColumnIndex("address");
-            String address = (addressIndex != -1) ? cursor.getString(addressIndex) : "Not Set";
-
-            int imgIndex = cursor.getColumnIndex("profile_image");
-            String imgPath = (imgIndex != -1) ? cursor.getString(imgIndex) : "";
-
-            tvProfileName.setText(username);
-            tvShowEmail.setText(email);
-            tvShowPhone.setText(phone);
-            tvShowAddress.setText(address);
-
-            if(imgPath != null && !imgPath.isEmpty()){
-                try {
-                    imgProfilePic.setImageURI(Uri.parse(imgPath));
-                } catch (Exception e) {
+                String imgPath = user.getProfileImage();
+                if(imgPath != null && !imgPath.isEmpty()){
+                    try {
+                        imgProfilePic.setImageURI(Uri.parse(imgPath));
+                    } catch (Exception e) {
+                        imgProfilePic.setImageResource(R.mipmap.ic_launcher);
+                    }
+                } else {
                     imgProfilePic.setImageResource(R.mipmap.ic_launcher);
                 }
             } else {
-                imgProfilePic.setImageResource(R.mipmap.ic_launcher);
+                Toast.makeText(this, "Error: No details found", Toast.LENGTH_SHORT).show();
             }
-        } else {
-            Toast.makeText(this, "Error: No details found", Toast.LENGTH_SHORT).show();
-        }
-
-        if (cursor != null) {
-            cursor.close();
-        }
+        });
     }
 }

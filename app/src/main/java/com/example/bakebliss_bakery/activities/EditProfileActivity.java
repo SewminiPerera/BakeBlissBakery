@@ -2,7 +2,6 @@ package com.example.bakebliss_bakery.activities;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
@@ -93,14 +92,16 @@ public class EditProfileActivity extends AppCompatActivity {
                 return;
             }
 
-            boolean isUpdated = dbHelper.updateUserProfile(currentUsername, newEmail, newPhone, newAddress, selectedImageUriString);
-
-            if (isUpdated) {
-                Toast.makeText(EditProfileActivity.this, "Profile Updated Successfully!", Toast.LENGTH_SHORT).show();
-                finish();
-            } else {
-                Toast.makeText(EditProfileActivity.this, "Failed to update profile.", Toast.LENGTH_SHORT).show();
-            }
+            btnSaveProfile.setEnabled(false);
+            dbHelper.updateUserProfile(currentUsername, newEmail, newPhone, newAddress, selectedImageUriString, isUpdated -> {
+                btnSaveProfile.setEnabled(true);
+                if (isUpdated) {
+                    Toast.makeText(EditProfileActivity.this, "Profile Updated Successfully!", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    Toast.makeText(EditProfileActivity.this, "Failed to update profile.", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_edit_profile_layout), (v, insets) -> {
@@ -111,31 +112,27 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void loadExistingData() {
-        Cursor cursor = dbHelper.getUserDetails(currentUsername);
-        if (cursor != null && cursor.moveToFirst()) {
-            String email = cursor.getString(cursor.getColumnIndexOrThrow("email"));
-            String phone = cursor.getString(cursor.getColumnIndexOrThrow("phone"));
+        dbHelper.getUserProfile(currentUsername, user -> {
+            if (user != null) {
+                String email = user.getEmail();
+                String phone = user.getPhone();
+                String address = user.getAddress();
+                selectedImageUriString = user.getProfileImage();
 
-            int addressIndex = cursor.getColumnIndex("address");
-            String address = (addressIndex != -1) ? cursor.getString(addressIndex) : "";
+                etEditEmail.setText(email != null ? email : "");
+                etEditPhone.setText(phone != null ? phone : "");
+                if (address != null && !address.equals("Not Set")) {
+                    etEditAddress.setText(address);
+                }
 
-            int imgIndex = cursor.getColumnIndex("profile_image");
-            selectedImageUriString = (imgIndex != -1) ? cursor.getString(imgIndex) : "";
-
-            etEditEmail.setText(email);
-            etEditPhone.setText(phone);
-            if (!address.equals("Not Set")) {
-                etEditAddress.setText(address);
-            }
-
-            if (selectedImageUriString != null && !selectedImageUriString.isEmpty()) {
-                try {
-                    imgEditProfile.setImageURI(Uri.parse(selectedImageUriString));
-                } catch (Exception e) {
-                    imgEditProfile.setImageResource(R.mipmap.ic_launcher);
+                if (selectedImageUriString != null && !selectedImageUriString.isEmpty()) {
+                    try {
+                        imgEditProfile.setImageURI(Uri.parse(selectedImageUriString));
+                    } catch (Exception e) {
+                        imgEditProfile.setImageResource(R.mipmap.ic_launcher);
+                    }
                 }
             }
-        }
-        if (cursor != null) cursor.close();
+        });
     }
 }

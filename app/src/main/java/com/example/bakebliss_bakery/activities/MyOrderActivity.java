@@ -1,7 +1,6 @@
 package com.example.bakebliss_bakery.activities;
 
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -109,42 +108,29 @@ public class MyOrderActivity extends AppCompatActivity {
     private void loadAllOrders(String username) {
         orderList.clear();
 
-        Cursor orderCursor = dbHelper.getUserOrders(username);
-        if (orderCursor != null && orderCursor.moveToFirst()) {
-            do {
-                String name = orderCursor.getString(0);
-                String orderStatus = orderCursor.getString(1);
-                int qty = orderCursor.getInt(2);
-                double price = orderCursor.getDouble(3);
-                String date = orderCursor.getString(4);
+        dbHelper.getUserOrders(username, orders -> {
+            if (orders != null) {
+                orderList.addAll(orders);
+            }
 
-                orderList.add(new OrderModel(name, orderStatus, price, qty, date));
-            } while (orderCursor.moveToNext());
-            orderCursor.close();
-        }
+            dbHelper.getCartItems(username, cartItems -> {
+                if (cartItems != null) {
+                    double deliveryFee = 300.00;
+                    for (com.example.bakebliss_bakery.models.CartModel cartItem : cartItems) {
+                        double totalPrice = (cartItem.getPrice() * cartItem.getQuantity()) + deliveryFee;
+                        orderList.add(new OrderModel(cartItem.getFoodName(), "Pending", totalPrice, cartItem.getQuantity(), ""));
+                    }
+                }
 
-        Cursor cartCursor = dbHelper.getCartItems(username);
-        if (cartCursor != null && cartCursor.moveToFirst()) {
-            do {
-                String name = cartCursor.getString(cartCursor.getColumnIndexOrThrow("food_name"));
-
-                double unitPrice = cartCursor.getDouble(cartCursor.getColumnIndexOrThrow("price"));
-                int qty = cartCursor.getInt(cartCursor.getColumnIndexOrThrow("quantity"));
-                double deliveryFee = 300.00;
-                double totalPrice = (unitPrice * qty) + deliveryFee;
-
-                orderList.add(new OrderModel(name, "Pending", totalPrice, qty, ""));
-            } while (cartCursor.moveToNext());
-            cartCursor.close();
-        }
-
-        if (orderList.isEmpty()) {
-            rvOrders.setVisibility(View.GONE);
-            layoutEmptyOrders.setVisibility(View.VISIBLE);
-        } else {
-            rvOrders.setVisibility(View.VISIBLE);
-            layoutEmptyOrders.setVisibility(View.GONE);
-            orderAdapter.notifyDataSetChanged();
-        }
+                if (orderList.isEmpty()) {
+                    rvOrders.setVisibility(View.GONE);
+                    layoutEmptyOrders.setVisibility(View.VISIBLE);
+                } else {
+                    rvOrders.setVisibility(View.VISIBLE);
+                    layoutEmptyOrders.setVisibility(View.GONE);
+                    orderAdapter.notifyDataSetChanged();
+                }
+            });
+        });
     }
 }

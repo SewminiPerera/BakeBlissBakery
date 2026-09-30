@@ -1,7 +1,6 @@
 package com.example.bakebliss_bakery.activities;
 
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -88,31 +87,17 @@ public class CartActivity extends AppCompatActivity {
                 return;
             }
 
-            boolean allInserted = true;
-            for (CartModel item : cartList) {
-                // Find correct food ID based on the name
-                int actualFoodId = dbHelper.getFoodIdByName(item.getFoodName());
-
-                // Added deliveryFee to calculate the exact Total Payment ---
-                double itemTotalPrice = (item.getPrice() * item.getQuantity()) + deliveryFee;
-
-                // Insert into Orders table as 'Completed'
-                boolean inserted = dbHelper.insertOrder(username, actualFoodId, item.getQuantity(), itemTotalPrice, "Completed");
-
-                if(!inserted) {
-                    allInserted = false;
+            btnPlaceOrder.setEnabled(false);
+            dbHelper.placeOrders(username, cartList, deliveryFee, success -> {
+                btnPlaceOrder.setEnabled(true);
+                if (success) {
+                    Intent confirmIntent = new Intent(CartActivity.this, OrderConfirmActivity.class);
+                    startActivity(confirmIntent);
+                    finish();
+                } else {
+                    Toast.makeText(this, "Failed to process orders. Please try again.", Toast.LENGTH_SHORT).show();
                 }
-            }
-
-            if (allInserted) {
-                // Clear the cart after placing order successfully
-                dbHelper.clearCart(username);
-                Intent confirmIntent = new Intent(CartActivity.this, OrderConfirmActivity.class);
-                startActivity(confirmIntent);
-                finish();
-            } else {
-                Toast.makeText(this, "Some orders failed to process!", Toast.LENGTH_SHORT).show();
-            }
+            });
         });
 
         // BOTTOM NAVIGATION BAR SETUP
@@ -159,26 +144,17 @@ public class CartActivity extends AppCompatActivity {
         });
     }
 
-    // Load Data from Cart Table
+    // Load Data from Firestore Cart
     private void loadCartData() {
-        cartList.clear();
-        Cursor cursor = dbHelper.getCartItems(username);
-
-        if (cursor.moveToFirst()) {
-            do {
-                int id = cursor.getInt(cursor.getColumnIndexOrThrow("cart_id"));
-                String name = cursor.getString(cursor.getColumnIndexOrThrow("food_name"));
-                double price = cursor.getDouble(cursor.getColumnIndexOrThrow("price"));
-                int qty = cursor.getInt(cursor.getColumnIndexOrThrow("quantity"));
-
-                cartList.add(new CartModel(id, name, price, qty));
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-
-        cartAdapter.notifyDataSetChanged();
-        calculateTotal();
-        checkEmptyState();
+        dbHelper.getCartItems(username, items -> {
+            cartList.clear();
+            if (items != null) {
+                cartList.addAll(items);
+            }
+            cartAdapter.notifyDataSetChanged();
+            calculateTotal();
+            checkEmptyState();
+        });
     }
 
     // Calculate Total Bill dynamically
