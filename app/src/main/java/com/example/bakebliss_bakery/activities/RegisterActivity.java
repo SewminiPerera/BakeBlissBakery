@@ -62,10 +62,20 @@ public class RegisterActivity extends AppCompatActivity {
                     || TextUtils.isEmpty(pass) || TextUtils.isEmpty(phone)) {
                 Toast.makeText(this, "All fields are required", Toast.LENGTH_SHORT).show();
             } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                etEmail.setError("Please enter a valid email address");
+                etEmail.requestFocus();
                 Toast.makeText(this, "Please enter a valid email address", Toast.LENGTH_SHORT).show();
+            } else if (phone.length() != 10 || !phone.matches("^\\d{10}$")) {
+                etPhone.setError("10 digits must be entered");
+                etPhone.requestFocus();
+                Toast.makeText(this, "10 digits must be entered", Toast.LENGTH_SHORT).show();
             } else if (pass.length() < 8) {
+                etPassword.setError("Password must be at least 8 characters");
+                etPassword.requestFocus();
                 Toast.makeText(this, "Password must be at least 8 characters", Toast.LENGTH_SHORT).show();
             } else if (!pass.equals(confirmPass)) {
+                etConfirmPass.setError("Passwords do not match");
+                etConfirmPass.requestFocus();
                 Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
             } else {
                 registerWithFirebase(username, email, phone, pass);

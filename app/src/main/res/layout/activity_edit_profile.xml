@@ -108,6 +108,8 @@
                     android:background="@drawable/bg_rounded_edittext"
                     android:paddingHorizontal="20dp"
                     android:inputType="phone"
+                    android:digits="0123456789"
+                    android:maxLength="10"
                     android:textColor="@color/black"
                     android:hint="Enter phone number"
                     android:textColorHint="#9E9E9E"

@@ -19,8 +19,10 @@ import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -93,18 +95,37 @@ public class DBHelper {
     // =========================================================================
 
     /**
-     * Seeds initial bakery items to Firestore if the collection is empty.
+     * Seeds initial bakery items to Firestore with deterministic document IDs (food_1 to food_40)
+     * and automatically deletes any duplicate or legacy auto-generated documents.
      */
     public void seedFoodItemsIfNeeded() {
         firestore.collection(COLLECTION_FOOD)
-                .limit(1)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     if (snapshot.isEmpty()) {
                         Log.d(TAG, "food_items collection is empty. Seeding data...");
                         seedFoodItems();
-                    } else {
-                        Log.d(TAG, "food_items already seeded.");
+                        return;
+                    }
+
+                    // Purge legacy auto-generated ID documents (e.g. documents without "food_" prefix)
+                    // or duplicate documents
+                    Map<String, String> seenNames = new HashMap<>();
+                    for (QueryDocumentSnapshot doc : snapshot) {
+                        String name = doc.getString("name");
+                        String docId = doc.getId();
+                        if (name != null) {
+                            String key = name.trim().toLowerCase(Locale.ROOT);
+                            if (seenNames.containsKey(key) || !docId.startsWith("food_")) {
+                                doc.getReference().delete();
+                            } else {
+                                seenNames.put(key, docId);
+                            }
+                        }
+                    }
+
+                    if (seenNames.size() < 40) {
+                        seedFoodItems();
                     }
                 })
                 .addOnFailureListener(e -> Log.e(TAG, "Error checking food items seed: " + e.getMessage()));
@@ -165,7 +186,9 @@ public class DBHelper {
 
         WriteBatch batch = firestore.batch();
         for (Map<String, Object> item : items) {
-            DocumentReference docRef = firestore.collection(COLLECTION_FOOD).document();
+            // Use deterministic document ID (food_1 to food_40) so it never duplicates
+            String docId = "food_" + item.get("id");
+            DocumentReference docRef = firestore.collection(COLLECTION_FOOD).document(docId);
             batch.set(docRef, item);
         }
         batch.commit()
@@ -184,34 +207,55 @@ public class DBHelper {
     }
 
     /**
-     * Retrieves all food items from Firestore.
+     * Retrieves all food items from Firestore, deduplicating any repeated entries
+     * and sorting them by their ID.
      */
     public void getAllFoodItems(FoodListCallback callback) {
         firestore.collection(COLLECTION_FOOD)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<FoodModel> list = new ArrayList<>();
                     if (queryDocumentSnapshots.isEmpty()) {
                         seedFoodItems();
                     }
+
+                    // Use LinkedHashMap keyed by lowercase food name to ensure strictly unique items
+                    Map<String, FoodModel> uniqueMap = new LinkedHashMap<>();
                     int defaultId = 1;
+
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        String name = doc.getString("name");
+                        if (name == null || name.trim().isEmpty()) continue;
+
+                        String key = name.trim().toLowerCase(Locale.ROOT);
+
+                        // If already encountered this food item, it's a duplicate in Firestore:
+                        // Delete the duplicate document from Firestore in the background
+                        if (uniqueMap.containsKey(key)) {
+                            doc.getReference().delete();
+                            continue;
+                        }
+
                         Long idLong = doc.getLong("id");
                         int id = (idLong != null) ? idLong.intValue() : defaultId++;
-                        String name = doc.getString("name");
                         String desc = doc.getString("description");
                         Double price = doc.getDouble("price");
                         String cat = doc.getString("category");
 
-                        list.add(new FoodModel(
+                        FoodModel food = new FoodModel(
                                 id,
-                                name != null ? name : "",
+                                name,
                                 desc != null ? desc : "",
                                 price != null ? price : 0.0,
                                 cat != null ? cat : "",
                                 doc.getId()
-                        ));
+                        );
+                        uniqueMap.put(key, food);
                     }
+
+                    List<FoodModel> list = new ArrayList<>(uniqueMap.values());
+                    // Sort items by ID so Burgers, Pastries, Cakes, Buns, Beverages display in order
+                    Collections.sort(list, (a, b) -> Integer.compare(a.getId(), b.getId()));
+
                     if (callback != null) {
                         callback.onCallback(list);
                     }
@@ -572,6 +616,85 @@ public class DBHelper {
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error fetching user orders: " + e.getMessage());
                     if (callback != null) callback.onCallback(new ArrayList<>());
+                });
+    }
+
+    // =========================================================================
+    //  ADMIN CRUD OPERATIONS
+    // =========================================================================
+
+    /**
+     * Check whether an email belongs to the admin account.
+     */
+    public static boolean isAdminEmail(String email) {
+        return email != null && email.trim().equalsIgnoreCase("admin@bakebliss.com");
+    }
+
+    /**
+     * Add a new food item to Firestore (Create).
+     * Uses an auto-generated document ID prefixed with "food_custom_".
+     */
+    public void addFoodItem(String name, String description, double price, String category, ActionCallback callback) {
+        Map<String, Object> item = new HashMap<>();
+        item.put("name", name);
+        item.put("description", description);
+        item.put("price", price);
+        item.put("category", category);
+
+        // Generate a sequential-style ID based on current timestamp to keep items sortable
+        item.put("id", (int) (System.currentTimeMillis() % 100000));
+
+        firestore.collection(COLLECTION_FOOD)
+                .add(item)
+                .addOnSuccessListener(docRef -> {
+                    Log.d(TAG, "Food item added with ID: " + docRef.getId());
+                    if (callback != null) callback.onComplete(true);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error adding food item: " + e.getMessage());
+                    if (callback != null) callback.onComplete(false);
+                });
+    }
+
+    /**
+     * Update an existing food item in Firestore (Update).
+     * Requires the Firestore document ID stored in FoodModel.documentId.
+     */
+    public void updateFoodItem(String documentId, String name, String description, double price, String category, ActionCallback callback) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("name", name);
+        updates.put("description", description);
+        updates.put("price", price);
+        updates.put("category", category);
+
+        firestore.collection(COLLECTION_FOOD)
+                .document(documentId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Food item updated: " + documentId);
+                    if (callback != null) callback.onComplete(true);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error updating food item: " + e.getMessage());
+                    if (callback != null) callback.onComplete(false);
+                });
+    }
+
+    /**
+     * Delete a food item from Firestore (Delete).
+     * Requires the Firestore document ID stored in FoodModel.documentId.
+     */
+    public void deleteFoodItem(String documentId, ActionCallback callback) {
+        firestore.collection(COLLECTION_FOOD)
+                .document(documentId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Food item deleted: " + documentId);
+                    if (callback != null) callback.onComplete(true);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error deleting food item: " + e.getMessage());
+                    if (callback != null) callback.onComplete(false);
                 });
     }
 }

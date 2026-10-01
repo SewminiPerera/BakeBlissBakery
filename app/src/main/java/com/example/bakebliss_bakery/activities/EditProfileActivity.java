@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -89,6 +90,20 @@ public class EditProfileActivity extends AppCompatActivity {
 
             if (newEmail.isEmpty() || newPhone.isEmpty()) {
                 Toast.makeText(EditProfileActivity.this, "Email and Phone cannot be empty", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!Patterns.EMAIL_ADDRESS.matcher(newEmail).matches()) {
+                etEditEmail.setError("Please enter a valid email address");
+                etEditEmail.requestFocus();
+                Toast.makeText(EditProfileActivity.this, "Please enter a valid email address", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (newPhone.length() != 10 || !newPhone.matches("^\\d{10}$")) {
+                etEditPhone.setError("10 digits must be entered");
+                etEditPhone.requestFocus();
+                Toast.makeText(EditProfileActivity.this, "10 digits must be entered", Toast.LENGTH_SHORT).show();
                 return;
             }
 

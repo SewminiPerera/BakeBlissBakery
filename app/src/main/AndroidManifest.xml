@@ -50,6 +50,12 @@
         <activity
             android:name=".activities.EditProfileActivity"
             android:exported="false" />
+        <activity
+            android:name=".activities.AdminActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.AdminAddEditFoodActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
