@@ -1,16 +1,26 @@
 package com.example.bakebliss_bakery.activities;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.PickVisualMediaRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -19,19 +29,51 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.bakebliss_bakery.R;
 import com.example.bakebliss_bakery.database.DBHelper;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+
 public class AdminAddEditFoodActivity extends AppCompatActivity {
 
     EditText etFoodName, etFoodDesc, etFoodPrice;
     Spinner spinnerCategory;
     Button btnSaveFood;
     TextView tvFormTitle;
+    FrameLayout frameAdminFoodPhoto;
+    ImageView imgAdminFoodPreview;
+    LinearLayout layoutPhotoPlaceholder;
 
     DBHelper dbHelper;
 
     boolean isEditMode = false;
     String foodDocId = "";
+    String selectedImageUriString = "";
 
     private static final String[] CATEGORIES = {"Burger", "Pastry", "Cake", "Bun", "Beverage"};
+
+    // Modern Android Photo Picker
+    private final ActivityResultLauncher<PickVisualMediaRequest> photoPickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
+                if (uri != null) {
+                    String localUri = saveImageToInternalStorage(uri);
+                    selectedImageUriString = localUri;
+                    displayFoodImage(localUri);
+                }
+            });
+
+    // Fallback Gallery Picker
+    private final ActivityResultLauncher<Intent> fallbackGalleryLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Uri selectedUri = result.getData().getData();
+                    if (selectedUri != null) {
+                        String localUri = saveImageToInternalStorage(selectedUri);
+                        selectedImageUriString = localUri;
+                        displayFoodImage(localUri);
+                    }
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,16 +87,24 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
 
         dbHelper = new DBHelper(this);
 
-        tvFormTitle    = findViewById(R.id.tvFormTitle);
-        etFoodName     = findViewById(R.id.etFoodName);
-        etFoodDesc     = findViewById(R.id.etFoodDesc);
-        etFoodPrice    = findViewById(R.id.etFoodPrice);
-        spinnerCategory = findViewById(R.id.spinnerCategory);
-        btnSaveFood    = findViewById(R.id.btnSaveFood);
+        tvFormTitle            = findViewById(R.id.tvFormTitle);
+        etFoodName             = findViewById(R.id.etFoodName);
+        etFoodDesc             = findViewById(R.id.etFoodDesc);
+        etFoodPrice            = findViewById(R.id.etFoodPrice);
+        spinnerCategory        = findViewById(R.id.spinnerCategory);
+        btnSaveFood            = findViewById(R.id.btnSaveFood);
+        frameAdminFoodPhoto    = findViewById(R.id.frameAdminFoodPhoto);
+        imgAdminFoodPreview    = findViewById(R.id.imgAdminFoodPreview);
+        layoutPhotoPlaceholder = findViewById(R.id.layoutPhotoPlaceholder);
 
         View btnBack = findViewById(R.id.btnBackAdminForm);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());
+        }
+
+        // Tap to choose image
+        if (frameAdminFoodPhoto != null) {
+            frameAdminFoodPhoto.setOnClickListener(v -> choosePhoto());
         }
 
         // Populate category spinner
@@ -75,10 +125,16 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
             String desc     = getIntent().getStringExtra("FOOD_DESC");
             double price    = getIntent().getDoubleExtra("FOOD_PRICE", 0.0);
             String category = getIntent().getStringExtra("FOOD_CATEGORY");
+            String image    = getIntent().getStringExtra("FOOD_IMAGE");
 
             etFoodName.setText(name != null ? name : "");
             etFoodDesc.setText(desc != null ? desc : "");
             etFoodPrice.setText(price > 0 ? String.format("%.2f", price) : "");
+
+            if (image != null && !image.isEmpty()) {
+                selectedImageUriString = image;
+                displayFoodImage(image);
+            }
 
             // Pre-select the category in the spinner
             if (category != null) {
@@ -101,6 +157,66 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    private void choosePhoto() {
+        if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(this)) {
+            photoPickerLauncher.launch(
+                    new PickVisualMediaRequest.Builder()
+                            .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                            .build()
+            );
+        } else {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("image/*");
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            fallbackGalleryLauncher.launch(Intent.createChooser(intent, "Select Food Photo"));
+        }
+    }
+
+    private void displayFoodImage(String uriString) {
+        if (uriString != null && !uriString.trim().isEmpty()) {
+            try {
+                imgAdminFoodPreview.setImageURI(Uri.parse(uriString));
+                imgAdminFoodPreview.setVisibility(View.VISIBLE);
+                if (layoutPhotoPlaceholder != null) {
+                    layoutPhotoPlaceholder.setVisibility(View.GONE);
+                }
+                return;
+            } catch (Exception e) {
+                Log.e("AdminAddEditFood", "Error loading preview image: " + e.getMessage());
+            }
+        }
+        if (imgAdminFoodPreview != null) {
+            imgAdminFoodPreview.setVisibility(View.GONE);
+        }
+        if (layoutPhotoPlaceholder != null) {
+            layoutPhotoPlaceholder.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private String saveImageToInternalStorage(Uri sourceUri) {
+        if (sourceUri == null) return "";
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(sourceUri);
+            if (inputStream == null) return sourceUri.toString();
+            File dir = new File(getFilesDir(), "food_images");
+            if (!dir.exists()) dir.mkdirs();
+            File destFile = new File(dir, "food_" + System.currentTimeMillis() + ".jpg");
+            FileOutputStream outputStream = new FileOutputStream(destFile);
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            outputStream.flush();
+            outputStream.close();
+            inputStream.close();
+            return Uri.fromFile(destFile).toString();
+        } catch (Exception e) {
+            Log.e("AdminAddEditFood", "Error copying image to internal storage: " + e.getMessage());
+            return sourceUri.toString();
+        }
     }
 
     private void saveFood() {
@@ -142,7 +258,7 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
 
         if (isEditMode) {
             // UPDATE existing food item
-            dbHelper.updateFoodItem(foodDocId, name, desc, price, category, success -> {
+            dbHelper.updateFoodItem(foodDocId, name, desc, price, category, selectedImageUriString, success -> {
                 btnSaveFood.setEnabled(true);
                 if (success) {
                     Toast.makeText(this, "\"" + name + "\" updated successfully!", Toast.LENGTH_SHORT).show();
@@ -153,7 +269,7 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
             });
         } else {
             // CREATE new food item
-            dbHelper.addFoodItem(name, desc, price, category, success -> {
+            dbHelper.addFoodItem(name, desc, price, category, selectedImageUriString, success -> {
                 btnSaveFood.setEnabled(true);
                 if (success) {
                     Toast.makeText(this, "\"" + name + "\" added successfully!", Toast.LENGTH_SHORT).show();

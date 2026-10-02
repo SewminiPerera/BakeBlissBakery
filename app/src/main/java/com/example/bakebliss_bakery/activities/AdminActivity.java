@@ -19,11 +19,14 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.bakebliss_bakery.MainActivity;
 import com.example.bakebliss_bakery.R;
 import com.example.bakebliss_bakery.adapters.AdminFoodAdapter;
 import com.example.bakebliss_bakery.database.DBHelper;
 import com.example.bakebliss_bakery.models.FoodModel;
+import com.example.bakebliss_bakery.utils.SessionManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +66,38 @@ public class AdminActivity extends AppCompatActivity implements AdminFoodAdapter
 
         View btnBack = findViewById(R.id.btnBackAdmin);
         if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
+            btnBack.setOnClickListener(v -> {
+                Intent intent = new Intent(AdminActivity.this, MainActivity.class);
+                startActivity(intent);
+                finish();
+            });
+        }
+
+        View btnAdminStore = findViewById(R.id.btnAdminStore);
+        if (btnAdminStore != null) {
+            btnAdminStore.setOnClickListener(v -> {
+                Intent intent = new Intent(AdminActivity.this, MainActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        View btnAdminLogout = findViewById(R.id.btnAdminLogout);
+        if (btnAdminLogout != null) {
+            btnAdminLogout.setOnClickListener(v -> {
+                new AlertDialog.Builder(this)
+                        .setTitle("Logout")
+                        .setMessage("Are you sure you want to log out?")
+                        .setPositiveButton("Logout", (d, w) -> {
+                            new SessionManager(getApplicationContext()).logoutUser();
+                            FirebaseAuth.getInstance().signOut();
+                            Intent intent = new Intent(AdminActivity.this, LoginActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            });
         }
 
         rvAdminFood.setLayoutManager(new LinearLayoutManager(this));
@@ -149,6 +183,7 @@ public class AdminActivity extends AppCompatActivity implements AdminFoodAdapter
         intent.putExtra("FOOD_DESC", food.getDescription());
         intent.putExtra("FOOD_PRICE", food.getPrice());
         intent.putExtra("FOOD_CATEGORY", food.getCategory());
+        intent.putExtra("FOOD_IMAGE", food.getImageUrl());
         startActivity(intent);
     }
 

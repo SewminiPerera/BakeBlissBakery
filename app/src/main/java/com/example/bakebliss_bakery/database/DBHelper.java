@@ -105,27 +105,6 @@ public class DBHelper {
                     if (snapshot.isEmpty()) {
                         Log.d(TAG, "food_items collection is empty. Seeding data...");
                         seedFoodItems();
-                        return;
-                    }
-
-                    // Purge legacy auto-generated ID documents (e.g. documents without "food_" prefix)
-                    // or duplicate documents
-                    Map<String, String> seenNames = new HashMap<>();
-                    for (QueryDocumentSnapshot doc : snapshot) {
-                        String name = doc.getString("name");
-                        String docId = doc.getId();
-                        if (name != null) {
-                            String key = name.trim().toLowerCase(Locale.ROOT);
-                            if (seenNames.containsKey(key) || !docId.startsWith("food_")) {
-                                doc.getReference().delete();
-                            } else {
-                                seenNames.put(key, docId);
-                            }
-                        }
-                    }
-
-                    if (seenNames.size() < 40) {
-                        seedFoodItems();
                     }
                 })
                 .addOnFailureListener(e -> Log.e(TAG, "Error checking food items seed: " + e.getMessage()));
@@ -218,28 +197,25 @@ public class DBHelper {
                         seedFoodItems();
                     }
 
-                    // Use LinkedHashMap keyed by lowercase food name to ensure strictly unique items
                     Map<String, FoodModel> uniqueMap = new LinkedHashMap<>();
-                    int defaultId = 1;
+                    int defaultId = 100;
 
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         String name = doc.getString("name");
                         if (name == null || name.trim().isEmpty()) continue;
-
-                        String key = name.trim().toLowerCase(Locale.ROOT);
-
-                        // If already encountered this food item, it's a duplicate in Firestore:
-                        // Delete the duplicate document from Firestore in the background
-                        if (uniqueMap.containsKey(key)) {
-                            doc.getReference().delete();
-                            continue;
-                        }
 
                         Long idLong = doc.getLong("id");
                         int id = (idLong != null) ? idLong.intValue() : defaultId++;
                         String desc = doc.getString("description");
                         Double price = doc.getDouble("price");
                         String cat = doc.getString("category");
+                        String imageUrl = doc.getString("imageUrl");
+                        if (imageUrl == null || imageUrl.isEmpty()) {
+                            imageUrl = doc.getString("image_url");
+                        }
+                        if (imageUrl == null || imageUrl.isEmpty()) {
+                            imageUrl = doc.getString("image");
+                        }
 
                         FoodModel food = new FoodModel(
                                 id,
@@ -247,14 +223,25 @@ public class DBHelper {
                                 desc != null ? desc : "",
                                 price != null ? price : 0.0,
                                 cat != null ? cat : "",
-                                doc.getId()
+                                doc.getId(),
+                                imageUrl != null ? imageUrl : ""
                         );
-                        uniqueMap.put(key, food);
+                        uniqueMap.put(doc.getId(), food);
                     }
 
                     List<FoodModel> list = new ArrayList<>(uniqueMap.values());
-                    // Sort items by ID so Burgers, Pastries, Cakes, Buns, Beverages display in order
-                    Collections.sort(list, (a, b) -> Integer.compare(a.getId(), b.getId()));
+                    // Sort items: Custom items (id > 40) appear at the TOP so newly added items are immediately visible!
+                    // Standard items (1..40) follow in order.
+                    Collections.sort(list, (a, b) -> {
+                        boolean aCustom = a.getId() > 40;
+                        boolean bCustom = b.getId() > 40;
+                        if (aCustom && !bCustom) return -1;
+                        if (!aCustom && bCustom) return 1;
+                        if (aCustom && bCustom) {
+                            return Integer.compare(b.getId(), a.getId()); // newest custom items first
+                        }
+                        return Integer.compare(a.getId(), b.getId());
+                    });
 
                     if (callback != null) {
                         callback.onCallback(list);
@@ -634,23 +621,25 @@ public class DBHelper {
     }
 
     /**
-     * Add a new food item to Firestore (Create).
-     * Uses an auto-generated document ID prefixed with "food_custom_".
+     * Add a new food item to Firestore (Create) with optional image.
+     * Uses a deterministic document ID prefixed with "food_custom_".
      */
-    public void addFoodItem(String name, String description, double price, String category, ActionCallback callback) {
+    public void addFoodItem(String name, String description, double price, String category, String imageUrl, ActionCallback callback) {
+        String docId = "food_custom_" + System.currentTimeMillis();
         Map<String, Object> item = new HashMap<>();
         item.put("name", name);
         item.put("description", description);
         item.put("price", price);
         item.put("category", category);
-
-        // Generate a sequential-style ID based on current timestamp to keep items sortable
-        item.put("id", (int) (System.currentTimeMillis() % 100000));
+        item.put("imageUrl", imageUrl != null ? imageUrl : "");
+        // High timestamp-based ID (> 40) so custom items sort first
+        item.put("id", (int) (System.currentTimeMillis() / 1000));
 
         firestore.collection(COLLECTION_FOOD)
-                .add(item)
-                .addOnSuccessListener(docRef -> {
-                    Log.d(TAG, "Food item added with ID: " + docRef.getId());
+                .document(docId)
+                .set(item)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Food item added with ID: " + docId);
                     if (callback != null) callback.onComplete(true);
                 })
                 .addOnFailureListener(e -> {
@@ -659,16 +648,23 @@ public class DBHelper {
                 });
     }
 
+    public void addFoodItem(String name, String description, double price, String category, ActionCallback callback) {
+        addFoodItem(name, description, price, category, "", callback);
+    }
+
     /**
-     * Update an existing food item in Firestore (Update).
+     * Update an existing food item in Firestore (Update) with optional image.
      * Requires the Firestore document ID stored in FoodModel.documentId.
      */
-    public void updateFoodItem(String documentId, String name, String description, double price, String category, ActionCallback callback) {
+    public void updateFoodItem(String documentId, String name, String description, double price, String category, String imageUrl, ActionCallback callback) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("name", name);
         updates.put("description", description);
         updates.put("price", price);
         updates.put("category", category);
+        if (imageUrl != null) {
+            updates.put("imageUrl", imageUrl);
+        }
 
         firestore.collection(COLLECTION_FOOD)
                 .document(documentId)
@@ -681,6 +677,10 @@ public class DBHelper {
                     Log.e(TAG, "Error updating food item: " + e.getMessage());
                     if (callback != null) callback.onComplete(false);
                 });
+    }
+
+    public void updateFoodItem(String documentId, String name, String description, double price, String category, ActionCallback callback) {
+        updateFoodItem(documentId, name, description, price, category, null, callback);
     }
 
     /**

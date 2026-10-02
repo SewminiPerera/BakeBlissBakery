@@ -7,8 +7,11 @@ public class FoodModel {
     private double price;
     private String category;
     private String documentId;
+    private String imageUrl;
 
     public FoodModel() {
+        this.documentId = "";
+        this.imageUrl = "";
     }
 
     public FoodModel(int id, String name, String description, double price, String category) {
@@ -18,6 +21,7 @@ public class FoodModel {
         this.price = price;
         this.category = category;
         this.documentId = "";
+        this.imageUrl = "";
     }
 
     public FoodModel(int id, String name, String description, double price, String category, String documentId) {
@@ -27,6 +31,17 @@ public class FoodModel {
         this.price = price;
         this.category = category;
         this.documentId = documentId;
+        this.imageUrl = "";
+    }
+
+    public FoodModel(int id, String name, String description, double price, String category, String documentId, String imageUrl) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.category = category;
+        this.documentId = documentId;
+        this.imageUrl = imageUrl != null ? imageUrl : "";
     }
 
     public int getId() {
@@ -75,5 +90,13 @@ public class FoodModel {
 
     public void setDocumentId(String documentId) {
         this.documentId = documentId;
+    }
+
+    public String getImageUrl() {
+        return imageUrl != null ? imageUrl : "";
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl != null ? imageUrl : "";
     }
 }
