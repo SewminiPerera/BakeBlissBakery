@@ -1,7 +1,10 @@
 package com.example.bakebliss_bakery.activities;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -13,7 +16,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -21,10 +27,14 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.bakebliss_bakery.R;
 import com.example.bakebliss_bakery.database.DBHelper;
 import com.example.bakebliss_bakery.models.CartModel;
+import com.example.bakebliss_bakery.utils.NotificationHelper;
 import com.example.bakebliss_bakery.utils.SessionManager;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class PaymentActivity extends AppCompatActivity {
 
@@ -46,6 +56,12 @@ public class PaymentActivity extends AppCompatActivity {
     String username;
     boolean isCardPayment = true;
 
+    // Notification permission launcher for Android 13+ (Tiramisu)
+    private final ActivityResultLauncher<String> notificationPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                // If granted, order notifications can be displayed
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,6 +70,17 @@ public class PaymentActivity extends AppCompatActivity {
         setContentView(R.layout.activity_payment);
 
         if (getSupportActionBar() != null) getSupportActionBar().hide();
+
+        // Create notification channel early
+        NotificationHelper.createNotificationChannel(this);
+
+        // Check for Android 13+ notification permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
 
         // Bind views
         btnBackPayment   = findViewById(R.id.btnBackPayment);
@@ -104,7 +131,7 @@ public class PaymentActivity extends AppCompatActivity {
         tabCard.setOnClickListener(v -> selectCardTab());
         tabCash.setOnClickListener(v -> selectCashTab());
 
-        // Confirm / Place Order
+        // Confirm / Pay Now
         btnConfirmPayment.setOnClickListener(v -> handlePlaceOrder());
 
         // Window insets
@@ -119,9 +146,18 @@ public class PaymentActivity extends AppCompatActivity {
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private void updateSummaryDisplay() {
-        tvPaySubtotal.setText(String.format("Rs. %.2f", subtotal));
-        tvPayDelivery.setText(String.format("Rs. %.2f", subtotal > 0 ? deliveryFee : 0.0));
-        tvPayTotal.setText(String.format("Rs. %.2f", grandTotal));
+        tvPaySubtotal.setText(String.format(Locale.getDefault(), "Rs. %.2f", subtotal));
+        tvPayDelivery.setText(String.format(Locale.getDefault(), "Rs. %.2f", subtotal > 0 ? deliveryFee : 0.0));
+        tvPayTotal.setText(String.format(Locale.getDefault(), "Rs. %.2f", grandTotal));
+        updateButtonLabel();
+    }
+
+    private void updateButtonLabel() {
+        if (isCardPayment) {
+            btnConfirmPayment.setText(String.format(Locale.getDefault(), "Pay Now • Rs. %.2f", grandTotal));
+        } else {
+            btnConfirmPayment.setText("Pay with Cash on Delivery");
+        }
     }
 
     private void selectCardTab() {
@@ -132,6 +168,7 @@ public class PaymentActivity extends AppCompatActivity {
         tabCash.setTextColor(Color.parseColor("#757575"));
         layoutCardFields.setVisibility(View.VISIBLE);
         layoutCashNote.setVisibility(View.GONE);
+        updateButtonLabel();
     }
 
     private void selectCashTab() {
@@ -142,6 +179,7 @@ public class PaymentActivity extends AppCompatActivity {
         tabCard.setTextColor(Color.parseColor("#757575"));
         layoutCashNote.setVisibility(View.VISIBLE);
         layoutCardFields.setVisibility(View.GONE);
+        updateButtonLabel();
     }
 
     private void handlePlaceOrder() {
@@ -154,8 +192,9 @@ public class PaymentActivity extends AppCompatActivity {
         }
 
         // Validate card fields if card is selected
+        String cardNum = "";
         if (isCardPayment) {
-            String cardNum = etCardNumber.getText().toString().trim();
+            cardNum = etCardNumber.getText().toString().trim();
             String cardName = etCardHolder.getText().toString().trim();
             String expiry  = etExpiry.getText().toString().trim();
             String cvv     = etCvv.getText().toString().trim();
@@ -188,15 +227,48 @@ public class PaymentActivity extends AppCompatActivity {
         }
 
         btnConfirmPayment.setEnabled(false);
-        btnConfirmPayment.setText("Processing…");
+        btnConfirmPayment.setText("Processing Payment…");
+
+        // Determine Payment Method representation
+        final String finalPaymentMethod;
+        if (isCardPayment) {
+            String last4 = cardNum.length() >= 4 ? cardNum.substring(cardNum.length() - 4) : cardNum;
+            finalPaymentMethod = "Credit / Debit Card (•••• " + last4 + ")";
+        } else {
+            finalPaymentMethod = "Cash on Delivery";
+        }
+
+        // Generate Order ID & Timestamp
+        final String orderId = "BB-" + (100000 + (int) (Math.random() * 900000));
+        final String orderDate = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
+        final String estimatedTime = "20–30 Minutes";
 
         dbHelper.placeOrders(username, cartList, deliveryFee, success -> runOnUiThread(() -> {
             btnConfirmPayment.setEnabled(true);
-            btnConfirmPayment.setText("Place Order");
+            updateButtonLabel();
+
             if (success) {
-                // Navigate to confirmation screen
+                // 1. Send push/local notification about successful payment and delivery time
+                NotificationHelper.sendPaymentSuccessNotification(
+                        PaymentActivity.this,
+                        orderId,
+                        grandTotal,
+                        "20-30 minutes"
+                );
+
+                // 2. Navigate to Bill Payment Successful receipt page
                 Intent intent = new Intent(PaymentActivity.this, OrderConfirmActivity.class);
+                intent.putExtra("ORDER_ID", orderId);
+                intent.putExtra("ORDER_DATE", orderDate);
+                intent.putExtra("SUBTOTAL", subtotal);
+                intent.putExtra("DELIVERY_FEE", subtotal > 0 ? deliveryFee : 0.0);
+                intent.putExtra("GRAND_TOTAL", grandTotal);
+                intent.putExtra("DELIVERY_ADDRESS", address);
+                intent.putExtra("PAYMENT_METHOD", finalPaymentMethod);
+                intent.putExtra("ESTIMATED_TIME", estimatedTime);
+                intent.putExtra("CART_LIST", (java.io.Serializable) new ArrayList<>(cartList));
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
                 startActivity(intent);
                 finish();
             } else {

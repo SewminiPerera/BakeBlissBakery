@@ -72,6 +72,11 @@ public class CartActivity extends AppCompatActivity {
         sessionManager = new SessionManager(this);
         username = sessionManager.getUsername();
 
+        View btnBack = findViewById(R.id.btnBackCart);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
         rvCartItems.setLayoutManager(new LinearLayoutManager(this));
         cartList = new ArrayList<>();
 

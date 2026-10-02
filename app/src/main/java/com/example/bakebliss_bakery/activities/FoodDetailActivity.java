@@ -53,6 +53,11 @@ public class FoodDetailActivity extends AppCompatActivity {
         imgDetailFood = findViewById(R.id.imgDetailFood);
         btnHeart = findViewById(R.id.btnHeart);
 
+        View btnBack = findViewById(R.id.btnBackFoodDetail);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
         Intent intent = getIntent();
         String name = intent.getStringExtra("FOOD_NAME");
         String descFromIntent = intent.getStringExtra("FOOD_DESC");

@@ -61,6 +61,11 @@ public class AdminActivity extends AppCompatActivity implements AdminFoodAdapter
         fabAddFood      = findViewById(R.id.fabAddFood);
         tvAdminItemCount = findViewById(R.id.tvAdminItemCount);
 
+        View btnBack = findViewById(R.id.btnBackAdmin);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
         rvAdminFood.setLayoutManager(new LinearLayoutManager(this));
         adminFoodAdapter = new AdminFoodAdapter(this, foodList, this);
         rvAdminFood.setAdapter(adminFoodAdapter);

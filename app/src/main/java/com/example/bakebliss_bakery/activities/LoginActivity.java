@@ -118,6 +118,11 @@ public class LoginActivity extends AppCompatActivity {
         // ── Configure Google Sign-In ────────────────────────────────────────
         setupGoogleSignIn();
 
+        View btnBack = findViewById(R.id.btnBackLogin);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
         // ── Email / Password Login ──────────────────────────────────────────
         btnLogin.setOnClickListener(v -> {
             String email = etEmail.getText().toString().trim();

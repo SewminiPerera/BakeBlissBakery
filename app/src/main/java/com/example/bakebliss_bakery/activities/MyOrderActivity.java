@@ -62,6 +62,11 @@ public class MyOrderActivity extends AppCompatActivity {
 
         String username = sessionManager.getUsername();
 
+        View btnBack = findViewById(R.id.btnBackOrders);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
         loadAllOrders(username);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);

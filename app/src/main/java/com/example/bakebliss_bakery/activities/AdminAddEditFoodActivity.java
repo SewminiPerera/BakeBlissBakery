@@ -2,6 +2,7 @@ package com.example.bakebliss_bakery.activities;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -50,6 +51,11 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
         etFoodPrice    = findViewById(R.id.etFoodPrice);
         spinnerCategory = findViewById(R.id.spinnerCategory);
         btnSaveFood    = findViewById(R.id.btnSaveFood);
+
+        View btnBack = findViewById(R.id.btnBackAdminForm);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
         // Populate category spinner
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(

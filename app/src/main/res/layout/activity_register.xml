@@ -12,6 +12,21 @@
         android:layout_height="wrap_content"
         android:paddingVertical="40dp">
 
+        <ImageView
+            android:id="@+id/btnBackRegister"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="4dp"
+            android:src="@drawable/ic_back_arrow"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="Back"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
         <LinearLayout
             android:id="@+id/logoLayoutReg"
             android:layout_width="wrap_content"

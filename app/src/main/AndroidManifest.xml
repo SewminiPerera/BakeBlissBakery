@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="true"
@@ -58,6 +60,9 @@
             android:exported="false" />
         <activity
             android:name=".activities.AdminAddEditFoodActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activities.PaymentActivity"
             android:exported="false" />
     </application>
 

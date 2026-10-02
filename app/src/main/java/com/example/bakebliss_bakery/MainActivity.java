@@ -206,7 +206,7 @@ public class MainActivity extends AppCompatActivity {
 
     // --- Fetch Image from Firestore and Set in Home Screen Header ---
     private void loadProfilePicture(String username) {
-        dbHelper.getUserProfile(username, user -> {
+        dbHelper.getUserProfile(username, user -> runOnUiThread(() -> {
             if (user != null && user.getProfileImage() != null && !user.getProfileImage().isEmpty()) {
                 try {
                     imgTopProfile.setImageURI(Uri.parse(user.getProfileImage()));
@@ -216,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 imgTopProfile.setImageResource(R.mipmap.ic_launcher);
             }
-        });
+        }));
     }
 
     private void loadFoodData() {

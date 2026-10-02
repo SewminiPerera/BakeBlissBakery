@@ -77,6 +77,11 @@ public class EditProfileActivity extends AppCompatActivity {
         etEditAddress = findViewById(R.id.etEditAddress);
         btnSaveProfile = findViewById(R.id.btnSaveProfile);
 
+        ImageView btnBack = findViewById(R.id.btnBackEditProfile);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
         loadExistingData();
 
         // Allow tapping anywhere on the profile photo (image + camera icon overlay)

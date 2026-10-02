@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -64,6 +65,11 @@ public class ProfileActivity extends AppCompatActivity {
         imgProfilePic = findViewById(R.id.imgProfilePic);
         btnLogout = findViewById(R.id.btnLogout);
         btnEditProfile = findViewById(R.id.btnEditProfile);
+
+        View btnBack = findViewById(R.id.btnBackProfile);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
         String username = sessionManager.getUsername();
 
@@ -142,7 +148,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void loadUserProfile(String username) {
-        dbHelper.getUserProfile(username, user -> {
+        dbHelper.getUserProfile(username, user -> runOnUiThread(() -> {
             if (user != null) {
                 tvProfileName.setText(user.getUsername() != null && !user.getUsername().isEmpty() ? user.getUsername() : username);
                 tvShowEmail.setText(user.getEmail());
@@ -150,7 +156,7 @@ public class ProfileActivity extends AppCompatActivity {
                 tvShowAddress.setText(user.getAddress());
 
                 String imgPath = user.getProfileImage();
-                if(imgPath != null && !imgPath.isEmpty()){
+                if (imgPath != null && !imgPath.isEmpty()) {
                     try {
                         imgProfilePic.setImageURI(Uri.parse(imgPath));
                     } catch (Exception e) {
@@ -162,6 +168,6 @@ public class ProfileActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "Error: No details found", Toast.LENGTH_SHORT).show();
             }
-        });
+        }));
     }
 }

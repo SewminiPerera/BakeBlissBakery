@@ -3,6 +3,7 @@ package com.example.bakebliss_bakery.activities;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Patterns;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -49,6 +50,11 @@ public class RegisterActivity extends AppCompatActivity {
         etConfirmPass = findViewById(R.id.etConfirmPassword);
         btnRegister  = findViewById(R.id.btnRegister);
         tvLoginLink  = findViewById(R.id.tvLoginLink);
+
+        View btnBack = findViewById(R.id.btnBackRegister);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
         btnRegister.setOnClickListener(view -> {
             String username     = etUsername.getText().toString().trim();
