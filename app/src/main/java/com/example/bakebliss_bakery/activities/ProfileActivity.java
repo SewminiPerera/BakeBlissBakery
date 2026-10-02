@@ -32,7 +32,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     TextView tvProfileName, tvShowEmail, tvShowPhone, tvShowAddress;
     ImageView imgProfilePic;
-    Button btnLogout, btnEditProfile;
+    Button btnLogout, btnEditProfile, btnAdminPanel;
     DBHelper dbHelper;
     SessionManager sessionManager;
     GoogleSignInClient mGoogleSignInClient;
@@ -65,6 +65,7 @@ public class ProfileActivity extends AppCompatActivity {
         imgProfilePic = findViewById(R.id.imgProfilePic);
         btnLogout = findViewById(R.id.btnLogout);
         btnEditProfile = findViewById(R.id.btnEditProfile);
+        btnAdminPanel = findViewById(R.id.btnAdminPanel);
 
         View btnBack = findViewById(R.id.btnBackProfile);
         if (btnBack != null) {
@@ -164,6 +165,16 @@ public class ProfileActivity extends AppCompatActivity {
                     }
                 } else {
                     imgProfilePic.setImageResource(R.mipmap.ic_launcher);
+                }
+
+                boolean isAdmin = (user != null && DBHelper.isAdminEmail(user.getEmail()))
+                        || DBHelper.isAdminEmail(sessionManager.getUserEmail());
+                if (btnAdminPanel != null) {
+                    btnAdminPanel.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+                    btnAdminPanel.setOnClickListener(v -> {
+                        Intent intent = new Intent(ProfileActivity.this, AdminActivity.class);
+                        startActivity(intent);
+                    });
                 }
             } else {
                 Toast.makeText(this, "Error: No details found", Toast.LENGTH_SHORT).show();

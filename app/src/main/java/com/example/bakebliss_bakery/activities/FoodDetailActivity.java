@@ -2,6 +2,7 @@ package com.example.bakebliss_bakery.activities;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -61,13 +62,20 @@ public class FoodDetailActivity extends AppCompatActivity {
         Intent intent = getIntent();
         String name = intent.getStringExtra("FOOD_NAME");
         String descFromIntent = intent.getStringExtra("FOOD_DESC");
+        String foodImage = intent.getStringExtra("FOOD_IMAGE");
         basePrice = intent.getDoubleExtra("FOOD_PRICE", 0.0);
 
         tvName.setText(name);
 
         tvPrice.setText(String.format("Rs. %.2f", basePrice));
 
-        if(name != null) {
+        if (foodImage != null && !foodImage.trim().isEmpty()) {
+            try {
+                imgDetailFood.setImageURI(Uri.parse(foodImage));
+            } catch (Exception e) {
+                if (name != null) imgDetailFood.setImageResource(getImageResource(name));
+            }
+        } else if (name != null) {
             imgDetailFood.setImageResource(getImageResource(name));
         }
 

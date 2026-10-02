@@ -202,6 +202,7 @@ public class MainActivity extends AppCompatActivity {
         if(sessionManager != null && sessionManager.isLoggedIn()) {
             loadProfilePicture(sessionManager.getUsername());
         }
+        loadFoodData();
     }
 
     // --- Fetch Image from Firestore and Set in Home Screen Header ---

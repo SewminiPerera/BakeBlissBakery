@@ -2,6 +2,7 @@ package com.example.bakebliss_bakery.adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -57,7 +58,15 @@ public class FoodAdapter extends RecyclerView.Adapter<FoodAdapter.FoodViewHolder
         holder.tvName.setText(food.getName());
         holder.tvPrice.setText(String.format("Rs. %.2f", food.getPrice()));
 
-        holder.imgFood.setImageResource(getImageResource(food.getName()));
+        if (food.getImageUrl() != null && !food.getImageUrl().trim().isEmpty()) {
+            try {
+                holder.imgFood.setImageURI(Uri.parse(food.getImageUrl()));
+            } catch (Exception e) {
+                holder.imgFood.setImageResource(getImageResource(food.getName()));
+            }
+        } else {
+            holder.imgFood.setImageResource(getImageResource(food.getName()));
+        }
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, FoodDetailActivity.class);
@@ -65,6 +74,7 @@ public class FoodAdapter extends RecyclerView.Adapter<FoodAdapter.FoodViewHolder
             intent.putExtra("FOOD_NAME", food.getName());
             intent.putExtra("FOOD_DESC", food.getDescription());
             intent.putExtra("FOOD_PRICE", food.getPrice());
+            intent.putExtra("FOOD_IMAGE", food.getImageUrl());
             context.startActivity(intent);
         });
     }

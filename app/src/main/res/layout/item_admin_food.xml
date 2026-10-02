@@ -23,6 +23,22 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <!-- Food Thumbnail -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="10dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="0dp">
+
+                <ImageView
+                    android:id="@+id/imgAdminFoodThumb"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_logo" />
+            </androidx.cardview.widget.CardView>
+
             <!-- Food Name -->
             <TextView
                 android:id="@+id/tvAdminFoodName"

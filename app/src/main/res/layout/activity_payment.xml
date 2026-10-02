@@ -241,6 +241,7 @@
                             android:paddingHorizontal="16dp"
                             android:textColor="@color/black"
                             android:textColorHint="#BDBDBD"
+                            android:importantForAutofill="no"
                             android:layout_marginBottom="14dp" />
 
                         <!-- Cardholder Name -->
@@ -264,6 +265,7 @@
                             android:textColor="@color/black"
                             android:textColorHint="#BDBDBD"
                             android:textSize="15sp"
+                            android:importantForAutofill="no"
                             android:layout_marginBottom="14dp" />
 
                         <!-- Expiry + CVV row -->
@@ -300,6 +302,7 @@
                                     android:paddingHorizontal="16dp"
                                     android:textColor="@color/black"
                                     android:textColorHint="#BDBDBD"
+                                    android:importantForAutofill="no"
                                     android:textSize="15sp" />
                             </LinearLayout>
 
@@ -330,6 +333,7 @@
                                     android:paddingHorizontal="16dp"
                                     android:textColor="@color/black"
                                     android:textColorHint="#BDBDBD"
+                                    android:importantForAutofill="no"
                                     android:textSize="15sp" />
                             </LinearLayout>
                         </LinearLayout>

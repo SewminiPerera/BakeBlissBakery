@@ -1,10 +1,12 @@
 package com.example.bakebliss_bakery.adapters;
 
 import android.content.Context;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -48,6 +50,16 @@ public class AdminFoodAdapter extends RecyclerView.Adapter<AdminFoodAdapter.Admi
         holder.tvAdminFoodPrice.setText(String.format("Rs. %.2f", food.getPrice()));
         holder.tvAdminFoodDesc.setText(food.getDescription());
 
+        if (food.getImageUrl() != null && !food.getImageUrl().trim().isEmpty()) {
+            try {
+                holder.imgAdminFoodThumb.setImageURI(Uri.parse(food.getImageUrl()));
+            } catch (Exception e) {
+                holder.imgAdminFoodThumb.setImageResource(getImageResource(food.getName()));
+            }
+        } else {
+            holder.imgAdminFoodThumb.setImageResource(getImageResource(food.getName()));
+        }
+
         holder.btnEdit.setOnClickListener(v -> {
             if (listener != null) listener.onEdit(food);
         });
@@ -68,18 +80,35 @@ public class AdminFoodAdapter extends RecyclerView.Adapter<AdminFoodAdapter.Admi
         notifyDataSetChanged();
     }
 
+    private int getImageResource(String foodName) {
+        if (foodName == null) return R.mipmap.ic_launcher;
+        String cleanName = foodName.replace(" (50% OFF)", "");
+        String imageName = "food_" + cleanName.toLowerCase()
+                .replace(" ", "_")
+                .replace("(", "")
+                .replace(")", "")
+                .replace("&", "and");
+        int resId = context.getResources().getIdentifier(imageName, "drawable", context.getPackageName());
+        if (resId != 0) {
+            return resId;
+        }
+        return R.mipmap.ic_launcher;
+    }
+
     static class AdminFoodViewHolder extends RecyclerView.ViewHolder {
         TextView tvAdminFoodName, tvAdminFoodCategory, tvAdminFoodPrice, tvAdminFoodDesc;
+        ImageView imgAdminFoodThumb;
         ImageButton btnEdit, btnDelete;
 
         public AdminFoodViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvAdminFoodName     = itemView.findViewById(R.id.tvAdminFoodName);
-            tvAdminFoodCategory = itemView.findViewById(R.id.tvAdminFoodCategory);
-            tvAdminFoodPrice    = itemView.findViewById(R.id.tvAdminFoodPrice);
-            tvAdminFoodDesc     = itemView.findViewById(R.id.tvAdminFoodDesc);
-            btnEdit             = itemView.findViewById(R.id.btnAdminEdit);
-            btnDelete           = itemView.findViewById(R.id.btnAdminDelete);
+            tvAdminFoodName      = itemView.findViewById(R.id.tvAdminFoodName);
+            tvAdminFoodCategory  = itemView.findViewById(R.id.tvAdminFoodCategory);
+            tvAdminFoodPrice     = itemView.findViewById(R.id.tvAdminFoodPrice);
+            tvAdminFoodDesc      = itemView.findViewById(R.id.tvAdminFoodDesc);
+            imgAdminFoodThumb    = itemView.findViewById(R.id.imgAdminFoodThumb);
+            btnEdit              = itemView.findViewById(R.id.btnAdminEdit);
+            btnDelete            = itemView.findViewById(R.id.btnAdminDelete);
         }
     }
 }
