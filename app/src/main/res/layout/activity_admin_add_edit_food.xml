@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- ── Header Banner ──────────────────────────────────────────── -->
+        <!-- ── Header Banner ─────────────────────────────────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -70,7 +70,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ── Form Card ──────────────────────────────────────────────── -->
+        <!-- ── Form Card ─────────────────────────────────────────────── -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -84,6 +84,61 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="20dp">
+
+                <!-- ── Food Photo Picker ───────────────────────────── -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Food Photo"
+                    android:textColor="#333333"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <!-- Tap to pick image -->
+                <FrameLayout
+                    android:id="@+id/frameAdminFoodPhoto"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_input_field"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <!-- Preview image -->
+                    <ImageView
+                        android:id="@+id/imgAdminFoodPreview"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone"
+                        android:contentDescription="Food photo preview" />
+
+                    <!-- Placeholder when no photo chosen -->
+                    <LinearLayout
+                        android:id="@+id/layoutPhotoPlaceholder"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@android:drawable/ic_menu_camera"
+                            app:tint="#BDBDBD"
+                            android:contentDescription="Add photo" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Tap to add food photo"
+                            android:textColor="#BDBDBD"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </FrameLayout>
 
                 <!-- Food Name -->
                 <TextView
@@ -103,6 +158,7 @@
                     android:background="@drawable/bg_input_field"
                     android:hint="e.g. Chocolate Fudge Cake"
                     android:inputType="textCapWords"
+                    android:importantForAutofill="no"
                     android:paddingHorizontal="14dp"
                     android:textSize="14sp" />
 
@@ -125,6 +181,7 @@
                     android:gravity="top|start"
                     android:hint="Describe the food item..."
                     android:inputType="textMultiLine"
+                    android:importantForAutofill="no"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="10dp"
                     android:textSize="14sp" />
@@ -147,6 +204,7 @@
                     android:background="@drawable/bg_input_field"
                     android:hint="e.g. 850.00"
                     android:inputType="numberDecimal"
+                    android:importantForAutofill="no"
                     android:paddingHorizontal="14dp"
                     android:textSize="14sp" />
 

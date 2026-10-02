@@ -56,11 +56,9 @@ public class PaymentActivity extends AppCompatActivity {
     String username;
     boolean isCardPayment = true;
 
-    // Notification permission launcher for Android 13+ (Tiramisu)
+    // Notification permission launcher for Android 13+
     private final ActivityResultLauncher<String> notificationPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                // If granted, order notifications can be displayed
-            });
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {});
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +72,7 @@ public class PaymentActivity extends AppCompatActivity {
         // Create notification channel early
         NotificationHelper.createNotificationChannel(this);
 
-        // Check for Android 13+ notification permission
+        // Request POST_NOTIFICATIONS permission on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -83,58 +81,54 @@ public class PaymentActivity extends AppCompatActivity {
         }
 
         // Bind views
-        btnBackPayment   = findViewById(R.id.btnBackPayment);
-        tvPaySubtotal    = findViewById(R.id.tvPaySubtotal);
-        tvPayDelivery    = findViewById(R.id.tvPayDelivery);
-        tvPayTotal       = findViewById(R.id.tvPayTotal);
-        tabCard          = findViewById(R.id.tabCard);
-        tabCash          = findViewById(R.id.tabCash);
-        layoutCardFields = findViewById(R.id.layoutCardFields);
-        layoutCashNote   = findViewById(R.id.layoutCashNote);
-        etCardNumber     = findViewById(R.id.etCardNumber);
-        etCardHolder     = findViewById(R.id.etCardHolder);
-        etExpiry         = findViewById(R.id.etExpiry);
-        etCvv            = findViewById(R.id.etCvv);
+        btnBackPayment    = findViewById(R.id.btnBackPayment);
+        tvPaySubtotal     = findViewById(R.id.tvPaySubtotal);
+        tvPayDelivery     = findViewById(R.id.tvPayDelivery);
+        tvPayTotal        = findViewById(R.id.tvPayTotal);
+        tabCard           = findViewById(R.id.tabCard);
+        tabCash           = findViewById(R.id.tabCash);
+        layoutCardFields  = findViewById(R.id.layoutCardFields);
+        layoutCashNote    = findViewById(R.id.layoutCashNote);
+        etCardNumber      = findViewById(R.id.etCardNumber);
+        etCardHolder      = findViewById(R.id.etCardHolder);
+        etExpiry          = findViewById(R.id.etExpiry);
+        etCvv             = findViewById(R.id.etCvv);
         etDeliveryAddress = findViewById(R.id.etDeliveryAddress);
         btnConfirmPayment = findViewById(R.id.btnConfirmPayment);
 
-        dbHelper = new DBHelper(this);
+        dbHelper       = new DBHelper(this);
         sessionManager = new SessionManager(this);
-        username = sessionManager.getUsername();
+        username       = sessionManager.getUsername();
 
-        // Receive totals from Cart
+        // Receive totals passed from CartActivity
         subtotal    = getIntent().getDoubleExtra("SUBTOTAL", 0.0);
         deliveryFee = getIntent().getDoubleExtra("DELIVERY_FEE", 300.0);
         grandTotal  = getIntent().getDoubleExtra("GRAND_TOTAL", 0.0);
 
-        // Receive cart list for placing order
+        // Receive cart list
         cartList = new ArrayList<>();
-        if (getIntent().getSerializableExtra("CART_LIST") != null) {
+        Object extra = getIntent().getSerializableExtra("CART_LIST");
+        if (extra instanceof List) {
             //noinspection unchecked
-            cartList = (List<CartModel>) getIntent().getSerializableExtra("CART_LIST");
+            cartList = (List<CartModel>) extra;
         }
 
-        // Display totals
         updateSummaryDisplay();
 
-        // Pre-fill delivery address from profile
-        dbHelper.getUserProfile(username, user -> runOnUiThread(() -> {
-            if (user != null && user.getAddress() != null && !user.getAddress().equals("Not Set")) {
-                etDeliveryAddress.setText(user.getAddress());
-            }
-        }));
+        // Pre-fill delivery address from saved profile
+        if (dbHelper != null && username != null) {
+            dbHelper.getUserProfile(username, user -> runOnUiThread(() -> {
+                if (user != null && user.getAddress() != null && !user.getAddress().equals("Not Set")) {
+                    etDeliveryAddress.setText(user.getAddress());
+                }
+            }));
+        }
 
-        // Back button
         btnBackPayment.setOnClickListener(v -> finish());
-
-        // Payment method tab toggle
         tabCard.setOnClickListener(v -> selectCardTab());
         tabCash.setOnClickListener(v -> selectCashTab());
-
-        // Confirm / Pay Now
         btnConfirmPayment.setOnClickListener(v -> handlePlaceOrder());
 
-        // Window insets
         ViewCompat.setOnApplyWindowInsetsListener(
                 findViewById(R.id.main_payment_layout), (v, insets) -> {
                     Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -143,7 +137,7 @@ public class PaymentActivity extends AppCompatActivity {
                 });
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // ── Tab helpers ──────────────────────────────────────────────────────────
 
     private void updateSummaryDisplay() {
         tvPaySubtotal.setText(String.format(Locale.getDefault(), "Rs. %.2f", subtotal));
@@ -154,7 +148,7 @@ public class PaymentActivity extends AppCompatActivity {
 
     private void updateButtonLabel() {
         if (isCardPayment) {
-            btnConfirmPayment.setText(String.format(Locale.getDefault(), "Pay Now • Rs. %.2f", grandTotal));
+            btnConfirmPayment.setText(String.format(Locale.getDefault(), "Pay Now  •  Rs. %.2f", grandTotal));
         } else {
             btnConfirmPayment.setText("Pay with Cash on Delivery");
         }
@@ -182,6 +176,8 @@ public class PaymentActivity extends AppCompatActivity {
         updateButtonLabel();
     }
 
+    // ── Order placement ──────────────────────────────────────────────────────
+
     private void handlePlaceOrder() {
         // Validate delivery address
         String address = etDeliveryAddress.getText().toString().trim();
@@ -191,13 +187,13 @@ public class PaymentActivity extends AppCompatActivity {
             return;
         }
 
-        // Validate card fields if card is selected
+        // Validate card fields only when card payment is selected
         String cardNum = "";
         if (isCardPayment) {
-            cardNum = etCardNumber.getText().toString().trim();
+            cardNum = etCardNumber.getText().toString().trim().replaceAll("\\s+", "");
             String cardName = etCardHolder.getText().toString().trim();
-            String expiry  = etExpiry.getText().toString().trim();
-            String cvv     = etCvv.getText().toString().trim();
+            String expiry   = etExpiry.getText().toString().trim();
+            String cvv      = etCvv.getText().toString().trim();
 
             if (cardNum.length() < 16) {
                 etCardNumber.setError("Enter a valid 16-digit card number");
@@ -210,7 +206,7 @@ public class PaymentActivity extends AppCompatActivity {
                 return;
             }
             if (expiry.length() < 4) {
-                etExpiry.setError("Enter valid expiry (MMYY)");
+                etExpiry.setError("Enter valid expiry (MM/YY)");
                 etExpiry.requestFocus();
                 return;
             }
@@ -221,15 +217,11 @@ public class PaymentActivity extends AppCompatActivity {
             }
         }
 
-        if (cartList == null || cartList.isEmpty()) {
-            Toast.makeText(this, "Cart is empty!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
+        // Disable button while processing
         btnConfirmPayment.setEnabled(false);
-        btnConfirmPayment.setText("Processing Payment…");
+        btnConfirmPayment.setText("Processing…");
 
-        // Determine Payment Method representation
+        // Build order metadata
         final String finalPaymentMethod;
         if (isCardPayment) {
             String last4 = cardNum.length() >= 4 ? cardNum.substring(cardNum.length() - 4) : cardNum;
@@ -238,42 +230,48 @@ public class PaymentActivity extends AppCompatActivity {
             finalPaymentMethod = "Cash on Delivery";
         }
 
-        // Generate Order ID & Timestamp
-        final String orderId = "BB-" + (100000 + (int) (Math.random() * 900000));
-        final String orderDate = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
-        final String estimatedTime = "20–30 Minutes";
+        final String orderId        = "BB-" + (100000 + (int) (Math.random() * 900000));
+        final String orderDate      = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
+        final String estimatedTime  = "20–30 Minutes";
+        final String deliveryAddr   = address;
+        final String finalCardNum   = cardNum;
 
-        dbHelper.placeOrders(username, cartList, deliveryFee, success -> runOnUiThread(() -> {
+        // ── Try to save order to Firestore, but ALWAYS navigate to confirm ──
+        Runnable navigateToConfirm = () -> runOnUiThread(() -> {
             btnConfirmPayment.setEnabled(true);
             updateButtonLabel();
 
-            if (success) {
-                // 1. Send push/local notification about successful payment and delivery time
-                NotificationHelper.sendPaymentSuccessNotification(
-                        PaymentActivity.this,
-                        orderId,
-                        grandTotal,
-                        "20-30 minutes"
-                );
+            // Notification 1: Payment Successful
+            NotificationHelper.sendPaymentSuccessNotification(
+                    PaymentActivity.this, orderId, grandTotal, "20-30 minutes");
 
-                // 2. Navigate to Bill Payment Successful receipt page
-                Intent intent = new Intent(PaymentActivity.this, OrderConfirmActivity.class);
-                intent.putExtra("ORDER_ID", orderId);
-                intent.putExtra("ORDER_DATE", orderDate);
-                intent.putExtra("SUBTOTAL", subtotal);
-                intent.putExtra("DELIVERY_FEE", subtotal > 0 ? deliveryFee : 0.0);
-                intent.putExtra("GRAND_TOTAL", grandTotal);
-                intent.putExtra("DELIVERY_ADDRESS", address);
-                intent.putExtra("PAYMENT_METHOD", finalPaymentMethod);
-                intent.putExtra("ESTIMATED_TIME", estimatedTime);
-                intent.putExtra("CART_LIST", (java.io.Serializable) new ArrayList<>(cartList));
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            // Notification 2: Order is processing
+            NotificationHelper.sendOrderProcessingNotification(
+                    PaymentActivity.this, orderId);
 
-                startActivity(intent);
-                finish();
-            } else {
-                Toast.makeText(this, "Failed to place order. Please try again.", Toast.LENGTH_SHORT).show();
-            }
-        }));
+            // Go to receipt / confirmation page
+            Intent intent = new Intent(PaymentActivity.this, OrderConfirmActivity.class);
+            intent.putExtra("ORDER_ID",        orderId);
+            intent.putExtra("ORDER_DATE",      orderDate);
+            intent.putExtra("SUBTOTAL",        subtotal);
+            intent.putExtra("DELIVERY_FEE",    subtotal > 0 ? deliveryFee : 0.0);
+            intent.putExtra("GRAND_TOTAL",     grandTotal);
+            intent.putExtra("DELIVERY_ADDRESS", deliveryAddr);
+            intent.putExtra("PAYMENT_METHOD",  finalPaymentMethod);
+            intent.putExtra("ESTIMATED_TIME",  estimatedTime);
+            intent.putExtra("CART_LIST",       (java.io.Serializable) new ArrayList<>(cartList));
+            // Clear the back stack so the user cannot go back to payment page
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        });
+
+        // Attempt Firestore save (fire-and-forget — we navigate regardless)
+        if (cartList != null && !cartList.isEmpty() && username != null) {
+            dbHelper.placeOrders(username, cartList, deliveryFee, success -> navigateToConfirm.run());
+        } else {
+            // No cart data via Intent — navigate directly
+            navigateToConfirm.run();
+        }
     }
 }

@@ -410,33 +410,34 @@
             </androidx.cardview.widget.CardView>
 
             <!-- ── Notification Status Card ── -->
+
+            <!-- ── Action Buttons ── -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:layout_marginBottom="20dp"
                 android:background="#ECEFF1"
-                android:padding="12dp"
-                android:layout_marginBottom="20dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp">
 
                 <ImageView
                     android:layout_width="22dp"
                     android:layout_height="22dp"
+                    android:contentDescription="Notification Icon"
                     android:src="@drawable/ic_notification"
-                    app:tint="#FF5722"
-                    android:contentDescription="Notification Icon" />
+                    app:tint="#FF5722" />
 
                 <TextView
                     android:layout_width="0dp"
-                    android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
+                    android:layout_weight="1"
                     android:text="A confirmation notification has been sent to your device."
                     android:textColor="#455A64"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- ── Action Buttons ── -->
             <Button
                 android:id="@+id/btnViewOrders"
                 android:layout_width="match_parent"

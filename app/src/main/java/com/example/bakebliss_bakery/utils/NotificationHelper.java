@@ -119,4 +119,57 @@ public class NotificationHelper {
             Log.e(TAG, "Failed to post notification: " + e.getMessage());
         }
     }
+
+    /**
+     * Send a second notification: "Your order is processing".
+     */
+    public static void sendOrderProcessingNotification(Context context, String orderId) {
+        if (context == null) return;
+
+        createNotificationChannel(context);
+
+        Intent intent = new Intent(context, MyOrderActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        int pendingIntentFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            pendingIntentFlags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                (int) (System.currentTimeMillis() / 1000),
+                intent,
+                pendingIntentFlags
+        );
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_logo)
+                .setContentTitle("🛍️ Your order is processing")
+                .setContentText("Order #" + orderId + " is being prepared. Estimated: 20–30 minutes.")
+                .setStyle(new NotificationCompat.BigTextStyle()
+                        .bigText("Order #" + orderId + " is being freshly prepared by our bakers! 🧁\n" +
+                                "⏱️ Estimated delivery: 20–30 minutes.\n" +
+                                "We'll make sure your treats arrive fresh and on time!"))
+                .setColor(Color.parseColor("#FF5722"))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+        }
+
+        try {
+            int notificationId = (int) (System.currentTimeMillis() % 100000) + 1;
+            notificationManager.notify(notificationId, builder.build());
+            Log.d(TAG, "Order processing notification posted: ID " + notificationId);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to post order processing notification: " + e.getMessage());
+        }
+    }
 }
