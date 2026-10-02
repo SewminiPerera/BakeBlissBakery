@@ -268,10 +268,10 @@ public class PaymentActivity extends AppCompatActivity {
 
         // Attempt Firestore save (fire-and-forget — we navigate regardless)
         if (cartList != null && !cartList.isEmpty() && username != null) {
-            dbHelper.placeOrders(username, cartList, deliveryFee, success -> navigateToConfirm.run());
-        } else {
-            // No cart data via Intent — navigate directly
-            navigateToConfirm.run();
+            dbHelper.placeOrders(username, cartList, deliveryFee, null);
         }
+        
+        // Navigate immediately so the UI never hangs
+        navigateToConfirm.run();
     }
 }
