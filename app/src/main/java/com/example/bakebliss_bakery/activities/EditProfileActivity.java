@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -24,6 +25,7 @@ import com.example.bakebliss_bakery.utils.SessionManager;
 
 public class EditProfileActivity extends AppCompatActivity {
 
+    FrameLayout frameProfilePic;
     ImageView imgEditProfile;
     EditText etEditEmail, etEditPhone, etEditAddress;
     Button btnSaveProfile;
@@ -41,8 +43,8 @@ public class EditProfileActivity extends AppCompatActivity {
                     Uri selectedImageUri = result.getData().getData();
                     if (selectedImageUri != null) {
                         try {
-                            getContentResolver().takePersistableUriPermission(selectedImageUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
+                            getContentResolver().takePersistableUriPermission(
+                                    selectedImageUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                             selectedImageUriString = selectedImageUri.toString();
                             imgEditProfile.setImageURI(selectedImageUri);
                         } catch (Exception e) {
@@ -68,6 +70,7 @@ public class EditProfileActivity extends AppCompatActivity {
         sessionManager = new SessionManager(this);
         currentUsername = sessionManager.getUsername();
 
+        frameProfilePic = findViewById(R.id.frameProfilePic);
         imgEditProfile = findViewById(R.id.imgEditProfile);
         etEditEmail = findViewById(R.id.etEditEmail);
         etEditPhone = findViewById(R.id.etEditPhone);
@@ -76,12 +79,15 @@ public class EditProfileActivity extends AppCompatActivity {
 
         loadExistingData();
 
-        imgEditProfile.setOnClickListener(v -> {
+        // Allow tapping anywhere on the profile photo (image + camera icon overlay)
+        android.view.View.OnClickListener pickImageListener = v -> {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("image/*");
             imagePickerLauncher.launch(intent);
-        });
+        };
+        frameProfilePic.setOnClickListener(pickImageListener);
+        imgEditProfile.setOnClickListener(pickImageListener);
 
         btnSaveProfile.setOnClickListener(v -> {
             String newEmail = etEditEmail.getText().toString().trim();
@@ -109,13 +115,16 @@ public class EditProfileActivity extends AppCompatActivity {
 
             btnSaveProfile.setEnabled(false);
             dbHelper.updateUserProfile(currentUsername, newEmail, newPhone, newAddress, selectedImageUriString, isUpdated -> {
-                btnSaveProfile.setEnabled(true);
-                if (isUpdated) {
-                    Toast.makeText(EditProfileActivity.this, "Profile Updated Successfully!", Toast.LENGTH_SHORT).show();
-                    finish();
-                } else {
-                    Toast.makeText(EditProfileActivity.this, "Failed to update profile.", Toast.LENGTH_SHORT).show();
-                }
+                // Firestore callbacks can be on a background thread — always run UI on main thread
+                runOnUiThread(() -> {
+                    btnSaveProfile.setEnabled(true);
+                    if (isUpdated) {
+                        Toast.makeText(EditProfileActivity.this, "Profile Updated Successfully!", Toast.LENGTH_SHORT).show();
+                        finish(); // go back to ProfileActivity (onResume will reload)
+                    } else {
+                        Toast.makeText(EditProfileActivity.this, "Failed to update profile.", Toast.LENGTH_SHORT).show();
+                    }
+                });
             });
         });
 
@@ -128,26 +137,28 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private void loadExistingData() {
         dbHelper.getUserProfile(currentUsername, user -> {
-            if (user != null) {
-                String email = user.getEmail();
-                String phone = user.getPhone();
-                String address = user.getAddress();
-                selectedImageUriString = user.getProfileImage();
+            runOnUiThread(() -> {
+                if (user != null) {
+                    String email = user.getEmail();
+                    String phone = user.getPhone();
+                    String address = user.getAddress();
+                    selectedImageUriString = user.getProfileImage();
 
-                etEditEmail.setText(email != null ? email : "");
-                etEditPhone.setText(phone != null ? phone : "");
-                if (address != null && !address.equals("Not Set")) {
-                    etEditAddress.setText(address);
-                }
+                    etEditEmail.setText(email != null ? email : "");
+                    etEditPhone.setText(phone != null ? phone : "");
+                    if (address != null && !address.equals("Not Set")) {
+                        etEditAddress.setText(address);
+                    }
 
-                if (selectedImageUriString != null && !selectedImageUriString.isEmpty()) {
-                    try {
-                        imgEditProfile.setImageURI(Uri.parse(selectedImageUriString));
-                    } catch (Exception e) {
-                        imgEditProfile.setImageResource(R.mipmap.ic_launcher);
+                    if (selectedImageUriString != null && !selectedImageUriString.isEmpty()) {
+                        try {
+                            imgEditProfile.setImageURI(Uri.parse(selectedImageUriString));
+                        } catch (Exception e) {
+                            imgEditProfile.setImageResource(R.mipmap.ic_launcher);
+                        }
                     }
                 }
-            }
+            });
         });
     }
 }

@@ -82,22 +82,24 @@ public class CartActivity extends AppCompatActivity {
         loadCartData();
 
         btnPlaceOrder.setOnClickListener(v -> {
-            if(cartList.isEmpty()){
+            if (cartList.isEmpty()) {
                 Toast.makeText(this, "Cart is empty!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            btnPlaceOrder.setEnabled(false);
-            dbHelper.placeOrders(username, cartList, deliveryFee, success -> {
-                btnPlaceOrder.setEnabled(true);
-                if (success) {
-                    Intent confirmIntent = new Intent(CartActivity.this, OrderConfirmActivity.class);
-                    startActivity(confirmIntent);
-                    finish();
-                } else {
-                    Toast.makeText(this, "Failed to process orders. Please try again.", Toast.LENGTH_SHORT).show();
-                }
-            });
+            // Navigate to Payment page with order totals and cart items
+            double subTotal = 0.0;
+            for (CartModel item : cartList) {
+                subTotal += (item.getPrice() * item.getQuantity());
+            }
+            double total = subTotal > 0 ? subTotal + deliveryFee : 0.0;
+
+            Intent payIntent = new Intent(CartActivity.this, PaymentActivity.class);
+            payIntent.putExtra("SUBTOTAL", subTotal);
+            payIntent.putExtra("DELIVERY_FEE", subTotal > 0 ? deliveryFee : 0.0);
+            payIntent.putExtra("GRAND_TOTAL", total);
+            payIntent.putExtra("CART_LIST", (java.io.Serializable) new java.util.ArrayList<>(cartList));
+            startActivity(payIntent);
         });
 
         // BOTTOM NAVIGATION BAR SETUP

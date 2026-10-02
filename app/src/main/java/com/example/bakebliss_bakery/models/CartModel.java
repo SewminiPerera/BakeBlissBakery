@@ -1,6 +1,8 @@
 package com.example.bakebliss_bakery.models;
 
-public class CartModel {
+import java.io.Serializable;
+
+public class CartModel implements Serializable {
     private String cartId;
     private String foodName;
     private double price;

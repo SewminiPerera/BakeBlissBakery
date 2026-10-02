@@ -2,4 +2,11 @@
     <string name="app_name">Bake Bliss</string>
     <string name="title_home">Home</string>
 
+    <!--
+        IMPORTANT: Replace the value below with your actual Web Client ID from Firebase Console.
+        Go to: Firebase Console → Authentication → Sign-in method → Google → Web SDK configuration
+        Copy the "Web client ID" and paste it here (it ends with .apps.googleusercontent.com).
+    -->
+    <string name="default_web_client_id">357806559864-REPLACE_WITH_YOUR_WEB_CLIENT_ID.apps.googleusercontent.com</string>
+
 </resources>

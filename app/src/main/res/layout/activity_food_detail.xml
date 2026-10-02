@@ -16,13 +16,26 @@
         android:gravity="center_vertical"
         app:layout_constraintTop_toTopOf="parent">
 
+        <ImageView
+            android:id="@+id/btnBackFoodDetail"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_back_arrow"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="Back" />
+
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="Details"
             android:textSize="18sp"
             android:textStyle="bold"
             android:gravity="center"
+            android:layout_marginEnd="40dp"
             android:textColor="@color/black"/>
 
     </LinearLayout>
