@@ -627,7 +627,10 @@ public class DBHelper {
      * Check whether an email belongs to the admin account.
      */
     public static boolean isAdminEmail(String email) {
-        return email != null && email.trim().equalsIgnoreCase("admin@bakebliss.com");
+        if (email == null) return false;
+        String trimmed = email.trim().toLowerCase();
+        return trimmed.equals("admin@bakebliss.com") ||
+               trimmed.equals("dinithisewmini8@gmail.com");
     }
 
     /**
