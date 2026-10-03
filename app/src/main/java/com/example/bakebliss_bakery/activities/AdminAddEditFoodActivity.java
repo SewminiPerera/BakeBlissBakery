@@ -41,7 +41,9 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
     TextView tvFormTitle;
     FrameLayout frameAdminFoodPhoto;
     ImageView imgAdminFoodPreview;
-    LinearLayout layoutPhotoPlaceholder;
+    LinearLayout layoutPhotoPlaceholder, layoutDiscountField;
+    android.widget.Switch switchSuperDeal;
+    EditText etDiscountPercent;
 
     DBHelper dbHelper;
 
@@ -96,6 +98,14 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
         frameAdminFoodPhoto    = findViewById(R.id.frameAdminFoodPhoto);
         imgAdminFoodPreview    = findViewById(R.id.imgAdminFoodPreview);
         layoutPhotoPlaceholder = findViewById(R.id.layoutPhotoPlaceholder);
+        switchSuperDeal        = findViewById(R.id.switchSuperDeal);
+        etDiscountPercent      = findViewById(R.id.etDiscountPercent);
+        layoutDiscountField    = findViewById(R.id.layoutDiscountField);
+
+        // Show/hide discount field based on Super Deal switch
+        switchSuperDeal.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            layoutDiscountField.setVisibility(isChecked ? android.view.View.VISIBLE : android.view.View.GONE);
+        });
 
         View btnBack = findViewById(R.id.btnBackAdminForm);
         if (btnBack != null) {
@@ -126,10 +136,18 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
             double price    = getIntent().getDoubleExtra("FOOD_PRICE", 0.0);
             String category = getIntent().getStringExtra("FOOD_CATEGORY");
             String image    = getIntent().getStringExtra("FOOD_IMAGE");
+            boolean isSuperDeal = getIntent().getBooleanExtra("IS_SUPER_DEAL", false);
+            double discountPct  = getIntent().getDoubleExtra("DISCOUNT_PERCENT", 0.0);
 
             etFoodName.setText(name != null ? name : "");
             etFoodDesc.setText(desc != null ? desc : "");
             etFoodPrice.setText(price > 0 ? String.format("%.2f", price) : "");
+
+            switchSuperDeal.setChecked(isSuperDeal);
+            if (isSuperDeal) {
+                layoutDiscountField.setVisibility(android.view.View.VISIBLE);
+                etDiscountPercent.setText(discountPct > 0 ? String.valueOf((int) discountPct) : "");
+            }
 
             if (image != null && !image.isEmpty()) {
                 selectedImageUriString = image;
@@ -224,6 +242,7 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
         String desc     = etFoodDesc.getText().toString().trim();
         String priceStr = etFoodPrice.getText().toString().trim();
         String category = spinnerCategory.getSelectedItem().toString();
+        boolean isSuperDeal = switchSuperDeal.isChecked();
 
         // Validation
         if (TextUtils.isEmpty(name)) {
@@ -254,11 +273,32 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
             return;
         }
 
+        double discountPercent = 0.0;
+        if (isSuperDeal) {
+            String discountStr = etDiscountPercent.getText().toString().trim();
+            if (TextUtils.isEmpty(discountStr)) {
+                etDiscountPercent.setError("Enter discount % for Super Deal");
+                etDiscountPercent.requestFocus();
+                return;
+            }
+            try {
+                discountPercent = Double.parseDouble(discountStr);
+                if (discountPercent <= 0 || discountPercent >= 100) {
+                    etDiscountPercent.setError("Discount must be between 1 and 99");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                etDiscountPercent.setError("Enter a valid discount percentage");
+                return;
+            }
+        }
+
         btnSaveFood.setEnabled(false);
+        final double finalDiscount = discountPercent;
 
         if (isEditMode) {
             // UPDATE existing food item
-            dbHelper.updateFoodItem(foodDocId, name, desc, price, category, selectedImageUriString, success -> {
+            dbHelper.updateFoodItem(foodDocId, name, desc, price, category, selectedImageUriString, isSuperDeal, finalDiscount, success -> {
                 btnSaveFood.setEnabled(true);
                 if (success) {
                     Toast.makeText(this, "\"" + name + "\" updated successfully!", Toast.LENGTH_SHORT).show();
@@ -269,7 +309,7 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
             });
         } else {
             // CREATE new food item
-            dbHelper.addFoodItem(name, desc, price, category, selectedImageUriString, success -> {
+            dbHelper.addFoodItem(name, desc, price, category, selectedImageUriString, isSuperDeal, finalDiscount, success -> {
                 btnSaveFood.setEnabled(true);
                 if (success) {
                     Toast.makeText(this, "\"" + name + "\" added successfully!", Toast.LENGTH_SHORT).show();

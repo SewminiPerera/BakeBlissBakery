@@ -262,10 +262,10 @@ public class DBHelper {
     /**
      * Save user profile details in Firestore.
      */
-    public void saveUserProfile(String username, String email, String phone, String address, String profileImage, ActionCallback callback) {
+    public void saveUserProfile(String username, String displayName, String email, String phone, String address, String profileImage, ActionCallback callback) {
         String docId = resolveUserDocId(username);
         Map<String, Object> userMap = new HashMap<>();
-        userMap.put("username", username);
+        userMap.put("username", displayName != null && !displayName.isEmpty() ? displayName : username);
         userMap.put("email", email);
         userMap.put("phone", phone);
         userMap.put("address", address != null && !address.isEmpty() ? address : "Not Set");
@@ -283,11 +283,21 @@ public class DBHelper {
                 });
     }
 
+    // Overload for backward compatibility (no displayName)
+    public void saveUserProfile(String username, String email, String phone, String address, String profileImage, ActionCallback callback) {
+        saveUserProfile(username, username, email, phone, address, profileImage, callback);
+    }
+
     /**
      * Update user profile details in Firestore.
      */
+    public void updateUserProfile(String username, String displayName, String email, String phone, String address, String profileImage, ActionCallback callback) {
+        saveUserProfile(username, displayName, email, phone, address, profileImage, callback);
+    }
+
+    // Overload for backward compatibility
     public void updateUserProfile(String username, String email, String phone, String address, String profileImage, ActionCallback callback) {
-        saveUserProfile(username, email, phone, address, profileImage, callback);
+        saveUserProfile(username, username, email, phone, address, profileImage, callback);
     }
 
     /**
@@ -670,6 +680,32 @@ public class DBHelper {
     }
 
     /**
+     * Add food item with super deal info.
+     */
+    public void addFoodItem(String name, String description, double price, String category, String imageUrl, boolean isSuperDeal, double discountPercent, ActionCallback callback) {
+        String docId = "food_custom_" + System.currentTimeMillis();
+        Map<String, Object> item = new HashMap<>();
+        item.put("name", name);
+        item.put("description", description);
+        item.put("price", price);
+        item.put("category", category);
+        item.put("imageUrl", imageUrl != null ? imageUrl : "");
+        item.put("id", (int) (System.currentTimeMillis() / 1000));
+        item.put("is_super_deal", isSuperDeal);
+        item.put("discount_percent", discountPercent);
+
+        firestore.collection(COLLECTION_FOOD)
+                .document(docId)
+                .set(item)
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) callback.onComplete(true);
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onComplete(false);
+                });
+    }
+
+    /**
      * Update an existing food item in Firestore (Update) with optional image.
      * Requires the Firestore document ID stored in FoodModel.documentId.
      */
@@ -698,6 +734,32 @@ public class DBHelper {
 
     public void updateFoodItem(String documentId, String name, String description, double price, String category, ActionCallback callback) {
         updateFoodItem(documentId, name, description, price, category, null, callback);
+    }
+
+    /**
+     * Update a food item with super deal info.
+     */
+    public void updateFoodItem(String documentId, String name, String description, double price, String category, String imageUrl, boolean isSuperDeal, double discountPercent, ActionCallback callback) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("name", name);
+        updates.put("description", description);
+        updates.put("price", price);
+        updates.put("category", category);
+        updates.put("is_super_deal", isSuperDeal);
+        updates.put("discount_percent", discountPercent);
+        if (imageUrl != null) {
+            updates.put("imageUrl", imageUrl);
+        }
+
+        firestore.collection(COLLECTION_FOOD)
+                .document(documentId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) callback.onComplete(true);
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onComplete(false);
+                });
     }
 
     /**

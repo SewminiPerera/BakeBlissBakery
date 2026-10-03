@@ -205,8 +205,9 @@ public class PaymentActivity extends AppCompatActivity {
                 etCardHolder.requestFocus();
                 return;
             }
-            if (expiry.length() < 4) {
-                etExpiry.setError("Enter valid expiry (MM/YY)");
+            // Validate expiry: must be MM/YY format and not in the past
+            if (!isValidExpiry(expiry)) {
+                etExpiry.setError("Enter a valid future expiry date (MM/YY)");
                 etExpiry.requestFocus();
                 return;
             }
@@ -241,13 +242,14 @@ public class PaymentActivity extends AppCompatActivity {
             btnConfirmPayment.setEnabled(true);
             updateButtonLabel();
 
-            // Notification 1: Payment Successful
+            // Notification 1: Payment Successful (immediate)
             NotificationHelper.sendPaymentSuccessNotification(
                     PaymentActivity.this, orderId, grandTotal, "20-30 minutes");
 
-            // Notification 2: Order is processing
-            NotificationHelper.sendOrderProcessingNotification(
-                    PaymentActivity.this, orderId);
+            // Notification 2: Order is processing (delayed by 5 seconds)
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() ->
+                    NotificationHelper.sendOrderProcessingNotification(
+                            PaymentActivity.this, orderId), 5000);
 
             // Go to receipt / confirmation page
             Intent intent = new Intent(PaymentActivity.this, OrderConfirmActivity.class);
@@ -270,8 +272,33 @@ public class PaymentActivity extends AppCompatActivity {
         if (cartList != null && !cartList.isEmpty() && username != null) {
             dbHelper.placeOrders(username, cartList, deliveryFee, null);
         }
-        
+
         // Navigate immediately so the UI never hangs
         navigateToConfirm.run();
+    }
+
+    /**
+     * Validates expiry in MM/YY format and checks it is not in the past.
+     */
+    private boolean isValidExpiry(String expiry) {
+        if (expiry == null) return false;
+        // Accept MM/YY or MMYY
+        String cleaned = expiry.replace("/", "").trim();
+        if (cleaned.length() < 4) return false;
+        try {
+            int month = Integer.parseInt(cleaned.substring(0, 2));
+            int year  = Integer.parseInt(cleaned.substring(2, 4));
+            if (month < 1 || month > 12) return false;
+            // Convert 2-digit year to 4-digit
+            int fullYear = 2000 + year;
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            int currentYear  = cal.get(java.util.Calendar.YEAR);
+            int currentMonth = cal.get(java.util.Calendar.MONTH) + 1; // Calendar months are 0-indexed
+            if (fullYear < currentYear) return false;
+            if (fullYear == currentYear && month < currentMonth) return false;
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

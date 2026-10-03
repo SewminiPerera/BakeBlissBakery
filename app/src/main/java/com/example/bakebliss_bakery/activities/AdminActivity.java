@@ -29,6 +29,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class AdminActivity extends AppCompatActivity implements AdminFoodAdapter.OnItemActionListener {
@@ -149,13 +150,83 @@ public class AdminActivity extends AppCompatActivity implements AdminFoodAdapter
     }
 
     private void filterAdminSearch(String query) {
+        String cleanQuery = (query == null) ? "" : query.trim().toLowerCase();
         List<FoodModel> filtered = new ArrayList<>();
-        for (FoodModel food : originalFoodList) {
-            if (food.getName().toLowerCase().contains(query.toLowerCase()) ||
-                    food.getCategory().toLowerCase().contains(query.toLowerCase())) {
-                filtered.add(food);
+
+        if (cleanQuery.isEmpty()) {
+            filtered.addAll(originalFoodList);
+        } else {
+            String[] queryTokens = cleanQuery.split("\\s+");
+
+            class ScoredAdminFood {
+                FoodModel food;
+                int score;
+                ScoredAdminFood(FoodModel food, int score) {
+                    this.food = food;
+                    this.score = score;
+                }
+            }
+
+            List<ScoredAdminFood> scored = new ArrayList<>();
+            for (FoodModel food : originalFoodList) {
+                if (food == null || food.getName() == null) continue;
+                String name = food.getName().trim().toLowerCase();
+                String category = food.getCategory() != null ? food.getCategory().trim().toLowerCase() : "";
+                String desc = food.getDescription() != null ? food.getDescription().trim().toLowerCase() : "";
+
+                int score = 0;
+                if (name.startsWith(cleanQuery)) {
+                    score = 1000 + (100 - Math.min(name.length(), 100));
+                } else {
+                    String[] words = name.split("[\\s\\-_,.]+");
+                    for (String word : words) {
+                        if (word.startsWith(cleanQuery)) {
+                            score = 600;
+                            break;
+                        }
+                    }
+                    if (score == 0 && queryTokens.length > 1) {
+                        boolean allTokensMatch = true;
+                        for (String token : queryTokens) {
+                            boolean tokenFound = false;
+                            for (String word : words) {
+                                if (word.startsWith(token) || word.contains(token)) {
+                                    tokenFound = true;
+                                    break;
+                                }
+                            }
+                            if (!tokenFound && (category.contains(token) || desc.contains(token))) {
+                                tokenFound = true;
+                            }
+                            if (!tokenFound) {
+                                allTokensMatch = false;
+                                break;
+                            }
+                        }
+                        if (allTokensMatch) score = 400;
+                    }
+                    if (score == 0 && name.contains(cleanQuery)) {
+                        score = 300;
+                    } else if (score == 0 && category.startsWith(cleanQuery)) {
+                        score = 150;
+                    } else if (score == 0 && category.contains(cleanQuery)) {
+                        score = 100;
+                    } else if (score == 0 && cleanQuery.length() >= 3 && desc.contains(cleanQuery)) {
+                        score = 20;
+                    }
+                }
+
+                if (score > 0) {
+                    scored.add(new ScoredAdminFood(food, score));
+                }
+            }
+
+            Collections.sort(scored, (a, b) -> Integer.compare(b.score, a.score));
+            for (ScoredAdminFood sf : scored) {
+                filtered.add(sf.food);
             }
         }
+
         adminFoodAdapter.updateList(filtered);
         tvAdminItemCount.setText(filtered.size() + " items");
         layoutAdminEmpty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);

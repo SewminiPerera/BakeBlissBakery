@@ -102,6 +102,27 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="Full Name"
+                    android:textColor="#757575"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="5dp"/>
+
+                <EditText
+                    android:id="@+id/etEditName"
+                    android:layout_width="match_parent"
+                    android:layout_height="55dp"
+                    android:background="@drawable/bg_rounded_edittext"
+                    android:paddingHorizontal="20dp"
+                    android:inputType="textPersonName|textCapWords"
+                    android:textColor="@color/black"
+                    android:hint="Enter your full name"
+                    android:textColorHint="#9E9E9E"
+                    android:autofillHints="name"
+                    android:layout_marginBottom="20dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Email Address"
                     android:textColor="#757575"
                     android:textSize="14sp"

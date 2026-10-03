@@ -38,6 +38,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -228,9 +229,14 @@ public class MainActivity extends AppCompatActivity {
                 foodList.addAll(list);
                 originalFoodList.addAll(list);
             }
-            if (adapter != null) {
-                adapter.notifyDataSetChanged();
-            }
+            runOnUiThread(() -> {
+                String currentQuery = etSearchFood != null ? etSearchFood.getText().toString().trim() : "";
+                if (!currentQuery.isEmpty()) {
+                    filterSearch(currentQuery);
+                } else if (adapter != null) {
+                    adapter.updateList(foodList);
+                }
+            });
         });
     }
 
@@ -252,15 +258,41 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // Filter the list based on Search Bar input
+    // Filter the list based on Search Bar input with smart prefix & keyword matching
     private void filterSearch(String query) {
         updateCategoryStyles(tvCatAll);
 
+        String cleanQuery = (query == null) ? "" : query.trim().toLowerCase();
+
         List<FoodModel> filteredList = new ArrayList<>();
-        for (FoodModel food : originalFoodList) {
-            if (food.getName().toLowerCase().contains(query.toLowerCase()) ||
-                    food.getDescription().toLowerCase().contains(query.toLowerCase())) {
-                filteredList.add(food);
+
+        if (cleanQuery.isEmpty()) {
+            filteredList.addAll(originalFoodList);
+        } else {
+            String[] queryTokens = cleanQuery.split("\\s+");
+
+            class ScoredFood {
+                FoodModel food;
+                int score;
+                ScoredFood(FoodModel food, int score) {
+                    this.food = food;
+                    this.score = score;
+                }
+            }
+
+            List<ScoredFood> scoredList = new ArrayList<>();
+            for (FoodModel food : originalFoodList) {
+                int score = calculateFoodSearchScore(food, cleanQuery, queryTokens);
+                if (score > 0) {
+                    scoredList.add(new ScoredFood(food, score));
+                }
+            }
+
+            // Sort by match score descending (highest relevance first)
+            Collections.sort(scoredList, (a, b) -> Integer.compare(b.score, a.score));
+
+            for (ScoredFood sf : scoredList) {
+                filteredList.add(sf.food);
             }
         }
 
@@ -273,6 +305,70 @@ public class MainActivity extends AppCompatActivity {
             tvNoFoodFound.setVisibility(View.GONE);
             recyclerView.setVisibility(View.VISIBLE);
         }
+    }
+
+    private int calculateFoodSearchScore(FoodModel food, String cleanQuery, String[] queryTokens) {
+        if (food == null || food.getName() == null) return 0;
+        String name = food.getName().trim().toLowerCase();
+        String category = food.getCategory() != null ? food.getCategory().trim().toLowerCase() : "";
+        String desc = food.getDescription() != null ? food.getDescription().trim().toLowerCase() : "";
+
+        // 1. Title starts directly with the query (e.g. "ch", "che", "chee" -> "Cheese Burger")
+        if (name.startsWith(cleanQuery)) {
+            return 1000 + (100 - Math.min(name.length(), 100));
+        }
+
+        // 2. Any word in the title starts with the query (e.g. "Double Cheese Burger" has word "cheese" starting with "ch", "che", "chee")
+        String[] words = name.split("[\\s\\-_,.]+");
+        for (String word : words) {
+            if (word.startsWith(cleanQuery)) {
+                return 600;
+            }
+        }
+
+        // 3. Multi-token match when user types multiple words (e.g. "che bur" or "cheese burger")
+        if (queryTokens.length > 1) {
+            boolean allTokensMatch = true;
+            for (String token : queryTokens) {
+                boolean tokenFound = false;
+                for (String word : words) {
+                    if (word.startsWith(token) || word.contains(token)) {
+                        tokenFound = true;
+                        break;
+                    }
+                }
+                if (!tokenFound && (category.contains(token) || desc.contains(token))) {
+                    tokenFound = true;
+                }
+                if (!tokenFound) {
+                    allTokensMatch = false;
+                    break;
+                }
+            }
+            if (allTokensMatch) {
+                return 400;
+            }
+        }
+
+        // 4. Title contains query anywhere
+        if (name.contains(cleanQuery)) {
+            return 300;
+        }
+
+        // 5. Category starts with or contains query
+        if (category.startsWith(cleanQuery)) {
+            return 150;
+        }
+        if (category.contains(cleanQuery)) {
+            return 100;
+        }
+
+        // 6. Description contains query (only for queries with at least 3 characters to avoid noisy matches)
+        if (cleanQuery.length() >= 3 && desc.contains(cleanQuery)) {
+            return 20;
+        }
+
+        return 0;
     }
 
     private void initializeCategoryViews() {
