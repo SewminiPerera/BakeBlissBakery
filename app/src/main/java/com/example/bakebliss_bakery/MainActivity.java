@@ -30,6 +30,7 @@ import com.example.bakebliss_bakery.activities.FoodDetailActivity;
 import com.example.bakebliss_bakery.activities.LoginActivity;
 import com.example.bakebliss_bakery.activities.MyOrderActivity;
 import com.example.bakebliss_bakery.activities.ProfileActivity;
+import com.example.bakebliss_bakery.activities.WelcomeActivity;
 import com.example.bakebliss_bakery.adapters.FoodAdapter;
 import com.example.bakebliss_bakery.database.DBHelper;
 import com.example.bakebliss_bakery.models.FoodModel;
@@ -70,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
         // --- SESSION VERIFICATION ---
         sessionManager = new SessionManager(getApplicationContext());
         if (!sessionManager.isLoggedIn()) {
-            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            Intent intent = new Intent(MainActivity.this, WelcomeActivity.class);
             startActivity(intent);
             finish();
             return;
@@ -260,9 +261,14 @@ public class MainActivity extends AppCompatActivity {
 
     // Filter the list based on Search Bar input with smart prefix & keyword matching
     private void filterSearch(String query) {
-        updateCategoryStyles(tvCatAll);
+        if (adapter == null || originalFoodList == null) return;
 
         String cleanQuery = (query == null) ? "" : query.trim().toLowerCase();
+
+        // Only reset category highlight when actually searching
+        if (!cleanQuery.isEmpty() && tvCatAll != null) {
+            updateCategoryStyles(tvCatAll);
+        }
 
         List<FoodModel> filteredList = new ArrayList<>();
 

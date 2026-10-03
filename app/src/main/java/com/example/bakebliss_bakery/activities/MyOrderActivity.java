@@ -111,31 +111,35 @@ public class MyOrderActivity extends AppCompatActivity {
     }
 
     private void loadAllOrders(String username) {
-        orderList.clear();
+        // Show a loading state while fetching
+        runOnUiThread(() -> {
+            rvOrders.setVisibility(View.GONE);
+            layoutEmptyOrders.setVisibility(View.GONE);
+        });
 
         dbHelper.getUserOrders(username, orders -> {
-            if (orders != null) {
-                orderList.addAll(orders);
-            }
-
-            dbHelper.getCartItems(username, cartItems -> {
-                if (cartItems != null) {
-                    double deliveryFee = 300.00;
-                    for (com.example.bakebliss_bakery.models.CartModel cartItem : cartItems) {
-                        double totalPrice = (cartItem.getPrice() * cartItem.getQuantity());
-                        orderList.add(new OrderModel(cartItem.getFoodName(), "Pending", totalPrice, cartItem.getQuantity(), ""));
-                    }
+            runOnUiThread(() -> {
+                orderList.clear();
+                if (orders != null && !orders.isEmpty()) {
+                    orderList.addAll(orders);
                 }
 
                 if (orderList.isEmpty()) {
                     rvOrders.setVisibility(View.GONE);
                     layoutEmptyOrders.setVisibility(View.VISIBLE);
                 } else {
-                    rvOrders.setVisibility(View.VISIBLE);
                     layoutEmptyOrders.setVisibility(View.GONE);
+                    rvOrders.setVisibility(View.VISIBLE);
                     orderAdapter.notifyDataSetChanged();
                 }
             });
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        String username = sessionManager.getUsername();
+        loadAllOrders(username);
     }
 }

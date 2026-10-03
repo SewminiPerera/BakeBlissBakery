@@ -45,6 +45,7 @@ public class PaymentActivity extends AppCompatActivity {
     LinearLayout layoutCardFields, layoutCashNote;
     EditText etCardNumber, etCardHolder, etExpiry, etCvv, etDeliveryAddress;
     Button btnConfirmPayment;
+    android.widget.ScrollView scrollViewPayment;
 
     // Data
     DBHelper dbHelper;
@@ -95,10 +96,21 @@ public class PaymentActivity extends AppCompatActivity {
         etCvv             = findViewById(R.id.etCvv);
         etDeliveryAddress = findViewById(R.id.etDeliveryAddress);
         btnConfirmPayment = findViewById(R.id.btnConfirmPayment);
+        scrollViewPayment = findViewById(R.id.scrollViewPayment);
 
         dbHelper       = new DBHelper(this);
         sessionManager = new SessionManager(this);
         username       = sessionManager.getUsername();
+        if (username == null || username.trim().isEmpty()) {
+            com.google.firebase.auth.FirebaseUser cu = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            if (cu != null) {
+                if (cu.getDisplayName() != null && !cu.getDisplayName().isEmpty()) {
+                    username = cu.getDisplayName();
+                } else if (cu.getEmail() != null) {
+                    username = cu.getEmail().split("@")[0];
+                }
+            }
+        }
 
         // Receive totals passed from CartActivity
         subtotal    = getIntent().getDoubleExtra("SUBTOTAL", 0.0);
@@ -114,6 +126,56 @@ public class PaymentActivity extends AppCompatActivity {
         }
 
         updateSummaryDisplay();
+
+        // Auto-format card number with spaces every 4 digits
+        etCardNumber.addTextChangedListener(new android.text.TextWatcher() {
+            private boolean isFormatting;
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                if (isFormatting) return;
+                isFormatting = true;
+                String digits = s.toString().replaceAll("\\s+", "");
+                StringBuilder formatted = new StringBuilder();
+                for (int i = 0; i < digits.length(); i++) {
+                    if (i > 0 && i % 4 == 0) {
+                        formatted.append("  ");
+                    }
+                    formatted.append(digits.charAt(i));
+                }
+                if (!s.toString().equals(formatted.toString())) {
+                    s.replace(0, s.length(), formatted.toString());
+                }
+                isFormatting = false;
+            }
+        });
+
+        // Auto-format expiry date with slash (MM/YY)
+        etExpiry.addTextChangedListener(new android.text.TextWatcher() {
+            private boolean isFormatting;
+            private int prevLen = 0;
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                prevLen = s.length();
+            }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                if (isFormatting) return;
+                isFormatting = true;
+                String text = s.toString();
+                if (text.length() > prevLen) { // on addition only
+                    String digits = text.replace("/", "").replaceAll("\\s+", "");
+                    if (digits.length() == 2) {
+                        s.append("/");
+                    } else if (digits.length() > 2 && !text.contains("/")) {
+                        String formatted = digits.substring(0, 2) + "/" + digits.substring(2);
+                        s.replace(0, s.length(), formatted);
+                    }
+                }
+                isFormatting = false;
+            }
+        });
 
         // Pre-fill delivery address from saved profile
         if (dbHelper != null && username != null) {
@@ -182,38 +244,58 @@ public class PaymentActivity extends AppCompatActivity {
         // Validate delivery address
         String address = etDeliveryAddress.getText().toString().trim();
         if (TextUtils.isEmpty(address)) {
+            Toast.makeText(this, "⚠️ Please enter your delivery address", Toast.LENGTH_SHORT).show();
             etDeliveryAddress.setError("Please enter a delivery address");
             etDeliveryAddress.requestFocus();
+            if (scrollViewPayment != null) {
+                scrollViewPayment.smoothScrollTo(0, etDeliveryAddress.getBottom());
+            }
             return;
         }
 
         // Validate card fields only when card payment is selected
         String cardNum = "";
         if (isCardPayment) {
-            cardNum = etCardNumber.getText().toString().trim().replaceAll("\\s+", "");
+            cardNum = etCardNumber.getText().toString().replaceAll("\\s+", "").trim();
             String cardName = etCardHolder.getText().toString().trim();
             String expiry   = etExpiry.getText().toString().trim();
             String cvv      = etCvv.getText().toString().trim();
 
             if (cardNum.length() < 16) {
+                Toast.makeText(this, "⚠️ Please enter a 16-digit card number", Toast.LENGTH_SHORT).show();
                 etCardNumber.setError("Enter a valid 16-digit card number");
                 etCardNumber.requestFocus();
+                if (scrollViewPayment != null) {
+                    scrollViewPayment.smoothScrollTo(0, etCardNumber.getTop());
+                }
                 return;
             }
             if (TextUtils.isEmpty(cardName)) {
+                Toast.makeText(this, "⚠️ Please enter the cardholder name", Toast.LENGTH_SHORT).show();
                 etCardHolder.setError("Enter cardholder name");
                 etCardHolder.requestFocus();
+                if (scrollViewPayment != null) {
+                    scrollViewPayment.smoothScrollTo(0, etCardHolder.getTop());
+                }
                 return;
             }
             // Validate expiry: must be MM/YY format and not in the past
             if (!isValidExpiry(expiry)) {
+                Toast.makeText(this, "⚠️ Please enter a valid future expiry date (MM/YY)", Toast.LENGTH_SHORT).show();
                 etExpiry.setError("Enter a valid future expiry date (MM/YY)");
                 etExpiry.requestFocus();
+                if (scrollViewPayment != null) {
+                    scrollViewPayment.smoothScrollTo(0, etExpiry.getTop());
+                }
                 return;
             }
             if (cvv.length() < 3) {
+                Toast.makeText(this, "⚠️ Please enter a valid 3-digit CVV", Toast.LENGTH_SHORT).show();
                 etCvv.setError("Enter valid CVV");
                 etCvv.requestFocus();
+                if (scrollViewPayment != null) {
+                    scrollViewPayment.smoothScrollTo(0, etCvv.getTop());
+                }
                 return;
             }
         }
@@ -235,10 +317,17 @@ public class PaymentActivity extends AppCompatActivity {
         final String orderDate      = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
         final String estimatedTime  = "20–30 Minutes";
         final String deliveryAddr   = address;
-        final String finalCardNum   = cardNum;
 
-        // ── Try to save order to Firestore, but ALWAYS navigate to confirm ──
+        // Atomic flag ensures single navigation execution
+        final java.util.concurrent.atomic.AtomicBoolean hasNavigated =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        // ── Navigate to confirmation screen ──
         Runnable navigateToConfirm = () -> runOnUiThread(() -> {
+            if (!hasNavigated.compareAndSet(false, true)) {
+                return;
+            }
+
             btnConfirmPayment.setEnabled(true);
             updateButtonLabel();
 
@@ -268,13 +357,17 @@ public class PaymentActivity extends AppCompatActivity {
             finish();
         });
 
-        // Attempt Firestore save (fire-and-forget — we navigate regardless)
-        if (cartList != null && !cartList.isEmpty() && username != null) {
-            dbHelper.placeOrders(username, cartList, deliveryFee, null);
-        }
+        // Safety fallback timer: if Firestore is offline, slow, or hanging, navigate after 2 seconds
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(navigateToConfirm, 2000);
 
-        // Navigate immediately so the UI never hangs
-        navigateToConfirm.run();
+        // ── Save orders to Firestore, clear cart, THEN navigate to confirm ──
+        if (cartList != null && !cartList.isEmpty() && username != null && !username.trim().isEmpty()) {
+            dbHelper.placeOrders(username, cartList, deliveryFee, success -> {
+                navigateToConfirm.run();
+            });
+        } else {
+            navigateToConfirm.run();
+        }
     }
 
     /**
@@ -282,22 +375,30 @@ public class PaymentActivity extends AppCompatActivity {
      */
     private boolean isValidExpiry(String expiry) {
         if (expiry == null) return false;
-        // Accept MM/YY or MMYY
-        String cleaned = expiry.replace("/", "").trim();
-        if (cleaned.length() < 4) return false;
+        String digits = expiry.replace("/", "").replaceAll("\\s+", "");
+        if (digits.length() < 3) return false;
         try {
-            int month = Integer.parseInt(cleaned.substring(0, 2));
-            int year  = Integer.parseInt(cleaned.substring(2, 4));
+            int month = Integer.parseInt(digits.substring(0, 2));
             if (month < 1 || month > 12) return false;
-            // Convert 2-digit year to 4-digit
-            int fullYear = 2000 + year;
+
+            int year;
+            if (digits.length() == 4) {
+                year = Integer.parseInt(digits.substring(2, 4));
+            } else if (digits.length() >= 5) {
+                year = Integer.parseInt(digits.substring(digits.length() - 2));
+            } else {
+                year = Integer.parseInt(digits.substring(2));
+            }
+
+            int fullYear = (year < 100) ? (2000 + year) : year;
             java.util.Calendar cal = java.util.Calendar.getInstance();
             int currentYear  = cal.get(java.util.Calendar.YEAR);
-            int currentMonth = cal.get(java.util.Calendar.MONTH) + 1; // Calendar months are 0-indexed
+            int currentMonth = cal.get(java.util.Calendar.MONTH) + 1; // 1-indexed
+
             if (fullYear < currentYear) return false;
             if (fullYear == currentYear && month < currentMonth) return false;
             return true;
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             return false;
         }
     }

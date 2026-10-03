@@ -43,6 +43,7 @@
 
     <!-- ── Scrollable Content ── -->
     <ScrollView
+        android:id="@+id/scrollViewPayment"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
@@ -235,7 +236,7 @@
                             android:background="@drawable/bg_rounded_edittext"
                             android:hint="1234  5678  9012  3456"
                             android:inputType="number"
-                            android:maxLength="16"
+                            android:maxLength="19"
                             android:textSize="16sp"
                             android:letterSpacing="0.1"
                             android:paddingHorizontal="16dp"
@@ -298,7 +299,7 @@
                                     android:background="@drawable/bg_rounded_edittext"
                                     android:hint="MM / YY"
                                     android:inputType="number"
-                                    android:maxLength="4"
+                                    android:maxLength="5"
                                     android:paddingHorizontal="16dp"
                                     android:textColor="@color/black"
                                     android:textColorHint="#BDBDBD"

@@ -20,11 +20,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BakeBlissBakery">
         <activity
-            android:name=".MainActivity"
+            android:name=".activities.WelcomeActivity"
             android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.BakeBlissBakery"
-            android:windowSoftInputMode="adjustResize">
+            android:theme="@style/Theme.BakeBlissBakery">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -32,8 +30,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".activities.WelcomeActivity"
-            android:exported="false" />
+            android:name=".MainActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.BakeBlissBakery"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activities.LoginActivity"
             android:exported="false" />

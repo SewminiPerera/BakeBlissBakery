@@ -91,7 +91,7 @@ public class AdminActivity extends AppCompatActivity implements AdminFoodAdapter
                         .setPositiveButton("Logout", (d, w) -> {
                             new SessionManager(getApplicationContext()).logoutUser();
                             FirebaseAuth.getInstance().signOut();
-                            Intent intent = new Intent(AdminActivity.this, LoginActivity.class);
+                            Intent intent = new Intent(AdminActivity.this, WelcomeActivity.class);
                             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                             startActivity(intent);
                             finish();
