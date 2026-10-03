@@ -122,7 +122,7 @@ public class MyOrderActivity extends AppCompatActivity {
                 if (cartItems != null) {
                     double deliveryFee = 300.00;
                     for (com.example.bakebliss_bakery.models.CartModel cartItem : cartItems) {
-                        double totalPrice = (cartItem.getPrice() * cartItem.getQuantity()) + deliveryFee;
+                        double totalPrice = (cartItem.getPrice() * cartItem.getQuantity());
                         orderList.add(new OrderModel(cartItem.getFoodName(), "Pending", totalPrice, cartItem.getQuantity(), ""));
                     }
                 }

@@ -543,7 +543,7 @@ public class DBHelper {
                 .collection(SUB_COLLECTION_ORDERS);
 
         for (CartModel item : cartItems) {
-            double itemTotalPrice = (item.getPrice() * item.getQuantity()) + deliveryFee;
+            double itemTotalPrice = (item.getPrice() * item.getQuantity());
             DocumentReference newOrderDoc = ordersRef.document();
 
             Map<String, Object> order = new HashMap<>();
@@ -583,20 +583,37 @@ public class DBHelper {
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<OrderModel> list = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        String name = doc.getString("food_name");
-                        String status = doc.getString("status");
-                        Double price = doc.getDouble("total_price");
-                        Long qtyLong = doc.getLong("quantity");
-                        int qty = (qtyLong != null) ? qtyLong.intValue() : 1;
-                        String date = doc.getString("order_date");
+                        try {
+                            String name = doc.getString("food_name");
+                            String status = doc.getString("status");
+                            
+                            Double price = 0.0;
+                            try {
+                                price = doc.getDouble("total_price");
+                            } catch (Exception e) {
+                                // Fallback if type is wrong
+                            }
+                            
+                            Long qtyLong = 1L;
+                            try {
+                                qtyLong = doc.getLong("quantity");
+                            } catch (Exception e) {
+                                // Fallback
+                            }
+                            
+                            int qty = (qtyLong != null) ? qtyLong.intValue() : 1;
+                            String date = doc.getString("order_date");
 
-                        list.add(new OrderModel(
-                                name != null ? name : "",
-                                status != null ? status : "Completed",
-                                price != null ? price : 0.0,
-                                qty,
-                                date != null ? date : ""
-                        ));
+                            list.add(new OrderModel(
+                                    name != null ? name : "",
+                                    status != null ? status : "Completed",
+                                    price != null ? price : 0.0,
+                                    qty,
+                                    date != null ? date : ""
+                            ));
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing order document", e);
+                        }
                     }
                     if (callback != null) callback.onCallback(list);
                 })
