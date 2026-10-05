@@ -101,24 +101,28 @@ public class RegisterActivity extends AppCompatActivity {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // Set display name to the chosen username
+                        // Set display name to the chosen username, then save to Firestore
                         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                                 .setDisplayName(username)
                                 .build();
 
                         if (mAuth.getCurrentUser() != null) {
-                            mAuth.getCurrentUser().updateProfile(profileUpdates);
+                            // Wait for updateProfile to finish so UID is fully ready,
+                            // then save the Firestore profile (DBHelper uses UID as doc ID)
+                            mAuth.getCurrentUser().updateProfile(profileUpdates)
+                                    .addOnCompleteListener(profileTask -> {
+                                        com.example.bakebliss_bakery.database.DBHelper dbHelper =
+                                                new com.example.bakebliss_bakery.database.DBHelper(RegisterActivity.this);
+                                        dbHelper.saveUserProfile(username, username, email, phone, "Not Set", "", success -> {
+                                            sessionManager.createLoginSession(username);
+                                            Toast.makeText(this, "Registration Successful! Please log in.", Toast.LENGTH_SHORT).show();
+                                            mAuth.signOut();
+                                            finish();
+                                        });
+                                    });
+                        } else {
+                            Toast.makeText(this, "Registration error: user not found after creation.", Toast.LENGTH_LONG).show();
                         }
-
-                        // Save user profile details to Firestore
-                        com.example.bakebliss_bakery.database.DBHelper dbHelper =
-                                new com.example.bakebliss_bakery.database.DBHelper(RegisterActivity.this);
-                        dbHelper.saveUserProfile(username, email, phone, "Not Set", "", success -> {
-                            sessionManager.createLoginSession(username);
-                            Toast.makeText(this, "Registration Successful! Please log in.", Toast.LENGTH_SHORT).show();
-                            mAuth.signOut();
-                            finish();
-                        });
                     } else {
                         String errorMsg = task.getException() != null
                                 ? task.getException().getMessage()

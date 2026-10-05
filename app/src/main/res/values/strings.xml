@@ -7,6 +7,6 @@
         Go to: Firebase Console → Authentication → Sign-in method → Google → Web SDK configuration
         Copy the "Web client ID" and paste it here (it ends with .apps.googleusercontent.com).
     -->
-    <string name="default_web_client_id">357806559864-REPLACE_WITH_YOUR_WEB_CLIENT_ID.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">357806559864-REPLACE_WITH_YOUR_WEB_CLIENT_ID.apps.357806559864-j3vr3dj0u6mac0cqbkjlnlhp8q3chp93.apps.googleusercontent.com</string>
 
 </resources>

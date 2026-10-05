@@ -258,6 +258,12 @@ public class LoginActivity extends AppCompatActivity {
                         String email = (user != null && user.getEmail() != null)
                                 ? user.getEmail() : "";
                         sessionManager.createLoginSession(name);
+
+                        // Upsert the Google user's profile to Firestore so ProfileActivity
+                        // can display their name & email. Uses merge so phone/address are preserved.
+                        DBHelper dbHelper = new DBHelper(LoginActivity.this);
+                        dbHelper.saveUserProfile(name, name, email, "", "Not Set", "", null);
+
                         Toast.makeText(this, "Welcome, " + name + "!", Toast.LENGTH_SHORT).show();
                         if (DBHelper.isAdminEmail(email)) {
                             goToAdmin();

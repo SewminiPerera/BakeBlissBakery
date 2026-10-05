@@ -152,9 +152,15 @@ public class ProfileActivity extends AppCompatActivity {
         dbHelper.getUserProfile(username, user -> runOnUiThread(() -> {
             if (user != null) {
                 tvProfileName.setText(user.getUsername() != null && !user.getUsername().isEmpty() ? user.getUsername() : username);
-                tvShowEmail.setText(user.getEmail());
-                tvShowPhone.setText(user.getPhone());
-                tvShowAddress.setText(user.getAddress());
+
+                String email = user.getEmail();
+                tvShowEmail.setText((email != null && !email.isEmpty()) ? email : "Not Set");
+
+                String phone = user.getPhone();
+                tvShowPhone.setText((phone != null && !phone.isEmpty()) ? phone : "Not Set");
+
+                String address = user.getAddress();
+                tvShowAddress.setText((address != null && !address.isEmpty()) ? address : "Not Set");
 
                 String imgPath = user.getProfileImage();
                 if (imgPath != null && !imgPath.isEmpty()) {
