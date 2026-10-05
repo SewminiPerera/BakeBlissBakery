@@ -51,19 +51,40 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvOrderStatus"
+        <LinearLayout
+            android:id="@+id/layoutStatusAndActions"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_rounded_edittext"
-            android:paddingHorizontal="15dp"
-            android:paddingVertical="8dp"
-            android:text="Status"
-            android:textColor="@color/white"
-            android:textSize="14sp"
-            android:textStyle="bold"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/tvOrderStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_rounded_edittext"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:text="Status"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/btnDeleteOrder"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_delete"
+                app:tint="#F44336"
+                android:padding="5dp"
+                android:layout_marginStart="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Delete order" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvOrderDate"

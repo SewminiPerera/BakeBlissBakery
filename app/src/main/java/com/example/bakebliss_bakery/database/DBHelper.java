@@ -29,7 +29,7 @@ import java.util.Map;
 
 /**
  * Firebase-backed DBHelper for BakeBliss Bakery.
- * Replaces SQLite with Cloud Firestore & Firebase Authentication.
+ * Cloud Firestore & Firebase Authentication.
  */
 public class DBHelper {
 
@@ -613,8 +613,10 @@ public class DBHelper {
                             
                             int qty = (qtyLong != null) ? qtyLong.intValue() : 1;
                             String date = doc.getString("order_date");
+                            String orderDocId = doc.getId();
 
                             list.add(new OrderModel(
+                                    orderDocId,
                                     name != null ? name : "",
                                     status != null ? status : "Completed",
                                     price != null ? price : 0.0,
@@ -631,6 +633,57 @@ public class DBHelper {
                     Log.e(TAG, "Error fetching user orders: " + e.getMessage());
                     if (callback != null) callback.onCallback(new ArrayList<>());
                 });
+    }
+
+    /**
+     * Delete a single order from Firestore.
+     */
+    public void deleteOrder(String username, String orderId, ActionCallback callback) {
+        String docId = resolveUserDocId(username);
+        firestore.collection(COLLECTION_USERS)
+                .document(docId)
+                .collection(SUB_COLLECTION_ORDERS)
+                .document(orderId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    if (callback != null) callback.onComplete(true);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error deleting order: " + e.getMessage());
+                    if (callback != null) callback.onComplete(false);
+                });
+    }
+
+    /**
+     * Delete all orders for a user from Firestore.
+     */
+    public void clearAllOrders(String username, ActionCallback callback) {
+        String docId = resolveUserDocId(username);
+        CollectionReference ordersRef = firestore.collection(COLLECTION_USERS)
+                .document(docId)
+                .collection(SUB_COLLECTION_ORDERS);
+
+        ordersRef.get().addOnSuccessListener(queryDocumentSnapshots -> {
+            if (queryDocumentSnapshots.isEmpty()) {
+                if (callback != null) callback.onComplete(true);
+                return;
+            }
+            WriteBatch batch = firestore.batch();
+            for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                batch.delete(doc.getReference());
+            }
+            batch.commit()
+                    .addOnSuccessListener(aVoid -> {
+                        if (callback != null) callback.onComplete(true);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error clearing orders: " + e.getMessage());
+                        if (callback != null) callback.onComplete(false);
+                    });
+        }).addOnFailureListener(e -> {
+            Log.e(TAG, "Error fetching orders to clear: " + e.getMessage());
+            if (callback != null) callback.onComplete(false);
+        });
     }
 
     // =========================================================================

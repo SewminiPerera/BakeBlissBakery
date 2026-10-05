@@ -77,6 +77,30 @@ public class CartActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
+        View btnClearCart = findViewById(R.id.btnClearCart);
+        if (btnClearCart != null) {
+            btnClearCart.setOnClickListener(v -> {
+                if (cartList.isEmpty()) {
+                    Toast.makeText(this, "Cart is already empty", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                new android.app.AlertDialog.Builder(CartActivity.this)
+                        .setTitle("Clear Cart")
+                        .setMessage("Are you sure you want to remove all items from your cart?")
+                        .setPositiveButton("Clear All", (dialog, which) -> {
+                            dbHelper.clearCart(username, success -> {
+                                cartList.clear();
+                                cartAdapter.notifyDataSetChanged();
+                                calculateTotal();
+                                checkEmptyState();
+                                Toast.makeText(CartActivity.this, "Cart cleared successfully!", Toast.LENGTH_SHORT).show();
+                            });
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            });
+        }
+
         rvCartItems.setLayoutManager(new LinearLayoutManager(this));
         cartList = new ArrayList<>();
 
@@ -198,5 +222,11 @@ public class CartActivity extends AppCompatActivity {
             btnPlaceOrder.setEnabled(true);
             btnPlaceOrder.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FF5722")));
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadCartData();
     }
 }

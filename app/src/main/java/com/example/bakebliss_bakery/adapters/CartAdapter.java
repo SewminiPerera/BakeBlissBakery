@@ -81,6 +81,26 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
                 Toast.makeText(context, "Item removed from cart", Toast.LENGTH_SHORT).show();
             }
         });
+
+        // Direct Delete Button
+        holder.btnDeleteCartItem.setOnClickListener(v -> {
+            new android.app.AlertDialog.Builder(context)
+                    .setTitle("Remove Item")
+                    .setMessage("Remove \"" + cartItem.getFoodName() + "\" from your cart?")
+                    .setPositiveButton("Remove", (dialog, which) -> {
+                        dbHelper.removeFromCart(cartItem.getCartId());
+                        int pos = holder.getAdapterPosition();
+                        if (pos != RecyclerView.NO_POSITION && pos < cartList.size()) {
+                            cartList.remove(pos);
+                            notifyItemRemoved(pos);
+                            notifyItemRangeChanged(pos, cartList.size());
+                        }
+                        if (listener != null) listener.onCartUpdated();
+                        Toast.makeText(context, "Item removed from cart", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
     }
 
     @Override
@@ -89,12 +109,13 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView imgCartFood;
+        ImageView imgCartFood, btnDeleteCartItem;
         TextView tvCartFoodName, tvCartFoodPrice, tvCartQuantity, btnCartMinus, btnCartPlus;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             imgCartFood = itemView.findViewById(R.id.imgCartFood);
+            btnDeleteCartItem = itemView.findViewById(R.id.btnDeleteCartItem);
             tvCartFoodName = itemView.findViewById(R.id.tvCartFoodName);
             tvCartFoodPrice = itemView.findViewById(R.id.tvCartFoodPrice);
             tvCartQuantity = itemView.findViewById(R.id.tvCartQuantity);

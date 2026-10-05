@@ -49,23 +49,50 @@ public class MyOrderActivity extends AppCompatActivity {
             getSupportActionBar().hide();
         }
 
-        rvOrders = findViewById(R.id.rvOrders);
-        layoutEmptyOrders = findViewById(R.id.layoutEmptyOrders);
-
-        rvOrders.setLayoutManager(new LinearLayoutManager(this));
-        orderList = new ArrayList<>();
-        orderAdapter = new OrderAdapter(this, orderList);
-        rvOrders.setAdapter(orderAdapter);
-
         dbHelper = new DBHelper(this);
         sessionManager = new SessionManager(this);
-
         String username = sessionManager.getUsername();
 
         View btnBack = findViewById(R.id.btnBackOrders);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());
         }
+
+        View btnClearOrders = findViewById(R.id.btnClearOrders);
+        if (btnClearOrders != null) {
+            btnClearOrders.setOnClickListener(v -> {
+                if (orderList.isEmpty()) {
+                    android.widget.Toast.makeText(this, "No orders to clear", android.widget.Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                new android.app.AlertDialog.Builder(MyOrderActivity.this)
+                        .setTitle("Clear All Orders")
+                        .setMessage("Are you sure you want to clear your entire order history?")
+                        .setPositiveButton("Clear All", (dialog, which) -> {
+                            dbHelper.clearAllOrders(username, success -> {
+                                runOnUiThread(() -> {
+                                    orderList.clear();
+                                    orderAdapter.notifyDataSetChanged();
+                                    rvOrders.setVisibility(View.GONE);
+                                    layoutEmptyOrders.setVisibility(View.VISIBLE);
+                                    android.widget.Toast.makeText(MyOrderActivity.this, "Order history cleared!", android.widget.Toast.LENGTH_SHORT).show();
+                                });
+                            });
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            });
+        }
+
+        rvOrders.setLayoutManager(new LinearLayoutManager(this));
+        orderList = new ArrayList<>();
+        orderAdapter = new OrderAdapter(this, orderList, dbHelper, username, () -> {
+            if (orderList.isEmpty()) {
+                rvOrders.setVisibility(View.GONE);
+                layoutEmptyOrders.setVisibility(View.VISIBLE);
+            }
+        });
+        rvOrders.setAdapter(orderAdapter);
 
         loadAllOrders(username);
 

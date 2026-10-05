@@ -127,7 +127,7 @@ public class PaymentActivity extends AppCompatActivity {
 
         updateSummaryDisplay();
 
-        // Auto-format card number with spaces every 4 digits
+        // Auto-format card number with a single space every 4 digits (1234 5678 9012 3456 = 19 chars)
         etCardNumber.addTextChangedListener(new android.text.TextWatcher() {
             private boolean isFormatting;
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -136,11 +136,14 @@ public class PaymentActivity extends AppCompatActivity {
             public void afterTextChanged(android.text.Editable s) {
                 if (isFormatting) return;
                 isFormatting = true;
-                String digits = s.toString().replaceAll("\\s+", "");
+                String digits = s.toString().replaceAll("[^0-9]", "");
+                if (digits.length() > 16) {
+                    digits = digits.substring(0, 16);
+                }
                 StringBuilder formatted = new StringBuilder();
                 for (int i = 0; i < digits.length(); i++) {
                     if (i > 0 && i % 4 == 0) {
-                        formatted.append("  ");
+                        formatted.append(" ");
                     }
                     formatted.append(digits.charAt(i));
                 }
@@ -151,27 +154,28 @@ public class PaymentActivity extends AppCompatActivity {
             }
         });
 
-        // Auto-format expiry date with slash (MM/YY)
+        // Auto-format expiry date with slash (MM/YY = 5 chars)
         etExpiry.addTextChangedListener(new android.text.TextWatcher() {
             private boolean isFormatting;
-            private int prevLen = 0;
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                prevLen = s.length();
-            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override
             public void afterTextChanged(android.text.Editable s) {
                 if (isFormatting) return;
                 isFormatting = true;
-                String text = s.toString();
-                if (text.length() > prevLen) { // on addition only
-                    String digits = text.replace("/", "").replaceAll("\\s+", "");
-                    if (digits.length() == 2) {
-                        s.append("/");
-                    } else if (digits.length() > 2 && !text.contains("/")) {
-                        String formatted = digits.substring(0, 2) + "/" + digits.substring(2);
-                        s.replace(0, s.length(), formatted);
+                String digits = s.toString().replaceAll("[^0-9]", "");
+                if (digits.length() > 4) {
+                    digits = digits.substring(0, 4);
+                }
+                StringBuilder formatted = new StringBuilder();
+                for (int i = 0; i < digits.length(); i++) {
+                    if (i == 2) {
+                        formatted.append("/");
                     }
+                    formatted.append(digits.charAt(i));
+                }
+                if (!s.toString().equals(formatted.toString())) {
+                    s.replace(0, s.length(), formatted.toString());
                 }
                 isFormatting = false;
             }
@@ -256,14 +260,14 @@ public class PaymentActivity extends AppCompatActivity {
         // Validate card fields only when card payment is selected
         String cardNum = "";
         if (isCardPayment) {
-            cardNum = etCardNumber.getText().toString().replaceAll("\\s+", "").trim();
+            cardNum = etCardNumber.getText().toString().replaceAll("[^0-9]", "").trim();
             String cardName = etCardHolder.getText().toString().trim();
             String expiry   = etExpiry.getText().toString().trim();
             String cvv      = etCvv.getText().toString().trim();
 
             if (cardNum.length() < 16) {
-                Toast.makeText(this, "⚠️ Please enter a 16-digit card number", Toast.LENGTH_SHORT).show();
-                etCardNumber.setError("Enter a valid 16-digit card number");
+                Toast.makeText(this, "⚠️ Please enter a 16-digit card number (" + cardNum.length() + "/16)", Toast.LENGTH_SHORT).show();
+                etCardNumber.setError("Must be 16 digits (" + cardNum.length() + "/16)");
                 etCardNumber.requestFocus();
                 if (scrollViewPayment != null) {
                     scrollViewPayment.smoothScrollTo(0, etCardNumber.getTop());

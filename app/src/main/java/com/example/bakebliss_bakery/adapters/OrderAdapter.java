@@ -1,5 +1,6 @@
 package com.example.bakebliss_bakery.adapters;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -8,23 +9,39 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.bakebliss_bakery.R;
+import com.example.bakebliss_bakery.database.DBHelper;
 import com.example.bakebliss_bakery.models.OrderModel;
 
 import java.util.List;
 
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> {
 
+    public interface OrderUpdateListener {
+        void onOrderDeleted();
+    }
+
     Context context;
     List<OrderModel> orderList;
+    DBHelper dbHelper;
+    String username;
+    OrderUpdateListener listener;
 
-    public OrderAdapter(Context context, List<OrderModel> orderList) {
+    public OrderAdapter(Context context, List<OrderModel> orderList, DBHelper dbHelper, String username, OrderUpdateListener listener) {
         this.context = context;
         this.orderList = orderList;
+        this.dbHelper = dbHelper;
+        this.username = username;
+        this.listener = listener;
+    }
+
+    public OrderAdapter(Context context, List<OrderModel> orderList) {
+        this(context, orderList, null, null, null);
     }
 
     @NonNull
@@ -53,6 +70,30 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
             holder.tvOrderStatus.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
             holder.tvOrderDate.setVisibility(View.GONE);
         }
+
+        // Delete single order button
+        holder.btnDeleteOrder.setOnClickListener(v -> {
+            new AlertDialog.Builder(context)
+                    .setTitle("Delete Order")
+                    .setMessage("Are you sure you want to delete this order for \"" + order.getFoodName() + "\"?")
+                    .setPositiveButton("Delete", (dialog, which) -> {
+                        if (dbHelper != null && order.getOrderId() != null && !order.getOrderId().isEmpty()) {
+                            dbHelper.deleteOrder(username, order.getOrderId(), success -> {});
+                        }
+                        int pos = holder.getAdapterPosition();
+                        if (pos != RecyclerView.NO_POSITION && pos < orderList.size()) {
+                            orderList.remove(pos);
+                            notifyItemRemoved(pos);
+                            notifyItemRangeChanged(pos, orderList.size());
+                        }
+                        if (listener != null) {
+                            listener.onOrderDeleted();
+                        }
+                        Toast.makeText(context, "Order deleted", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
     }
 
     @Override
@@ -61,12 +102,13 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView imgOrderFood;
+        ImageView imgOrderFood, btnDeleteOrder;
         TextView tvOrderFoodName, tvOrderPriceQty, tvOrderStatus, tvOrderDate;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             imgOrderFood = itemView.findViewById(R.id.imgOrderFood);
+            btnDeleteOrder = itemView.findViewById(R.id.btnDeleteOrder);
             tvOrderFoodName = itemView.findViewById(R.id.tvOrderFoodName);
             tvOrderPriceQty = itemView.findViewById(R.id.tvOrderPriceQty);
             tvOrderStatus = itemView.findViewById(R.id.tvOrderStatus);

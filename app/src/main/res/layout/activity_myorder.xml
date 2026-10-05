@@ -38,8 +38,21 @@
             android:textAlignment="center"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:textColor="@color/black"
-            android:layout_marginEnd="40dp" />
+            android:textColor="@color/black" />
+
+        <TextView
+            android:id="@+id/btnClearOrders"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clear"
+            android:textColor="#F44336"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
