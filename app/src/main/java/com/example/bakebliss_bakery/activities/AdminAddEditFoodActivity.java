@@ -1,4 +1,4 @@
-﻿package com.example.bakebliss_bakery.activities;
+package com.example.bakebliss_bakery.activities;
 
 import android.app.Activity;
 import android.content.Intent;
