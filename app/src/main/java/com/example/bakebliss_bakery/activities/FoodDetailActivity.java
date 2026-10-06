@@ -70,10 +70,28 @@ public class FoodDetailActivity extends AppCompatActivity {
         tvPrice.setText(String.format("Rs. %.2f", basePrice));
 
         if (foodImage != null && !foodImage.trim().isEmpty()) {
-            try {
-                imgDetailFood.setImageURI(Uri.parse(foodImage));
-            } catch (Exception e) {
-                if (name != null) imgDetailFood.setImageResource(getImageResource(name));
+            if (foodImage.startsWith("http://") || foodImage.startsWith("https://")) {
+                final String urlToLoad = foodImage;
+                new Thread(() -> {
+                    try {
+                        java.net.URL url = new java.net.URL(urlToLoad);
+                        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                        conn.setDoInput(true);
+                        conn.connect();
+                        android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(conn.getInputStream());
+                        if (bmp != null) {
+                            runOnUiThread(() -> imgDetailFood.setImageBitmap(bmp));
+                        }
+                    } catch (Exception e) {
+                        if (name != null) runOnUiThread(() -> imgDetailFood.setImageResource(getImageResource(name)));
+                    }
+                }).start();
+            } else {
+                try {
+                    imgDetailFood.setImageURI(Uri.parse(foodImage));
+                } catch (Exception e) {
+                    if (name != null) imgDetailFood.setImageResource(getImageResource(name));
+                }
             }
         } else if (name != null) {
             imgDetailFood.setImageResource(getImageResource(name));

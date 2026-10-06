@@ -217,6 +217,9 @@ public class DBHelper {
                             imageUrl = doc.getString("image");
                         }
 
+                        Boolean isSuperDeal = doc.getBoolean("is_super_deal");
+                        Double discountPct  = doc.getDouble("discount_percent");
+
                         FoodModel food = new FoodModel(
                                 id,
                                 name,
@@ -224,7 +227,9 @@ public class DBHelper {
                                 price != null ? price : 0.0,
                                 cat != null ? cat : "",
                                 doc.getId(),
-                                imageUrl != null ? imageUrl : ""
+                                imageUrl != null ? imageUrl : "",
+                                isSuperDeal != null && isSuperDeal,
+                                discountPct != null ? discountPct : 0.0
                         );
                         uniqueMap.put(doc.getId(), food);
                     }

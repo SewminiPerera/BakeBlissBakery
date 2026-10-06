@@ -255,6 +255,8 @@ public class AdminActivity extends AppCompatActivity implements AdminFoodAdapter
         intent.putExtra("FOOD_PRICE", food.getPrice());
         intent.putExtra("FOOD_CATEGORY", food.getCategory());
         intent.putExtra("FOOD_IMAGE", food.getImageUrl());
+        intent.putExtra("IS_SUPER_DEAL", food.isSuperDeal());
+        intent.putExtra("DISCOUNT_PERCENT", food.getDiscountPercent());
         startActivity(intent);
     }
 

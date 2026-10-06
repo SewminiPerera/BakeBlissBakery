@@ -50,11 +50,32 @@ public class AdminFoodAdapter extends RecyclerView.Adapter<AdminFoodAdapter.Admi
         holder.tvAdminFoodPrice.setText(String.format("Rs. %.2f", food.getPrice()));
         holder.tvAdminFoodDesc.setText(food.getDescription());
 
-        if (food.getImageUrl() != null && !food.getImageUrl().trim().isEmpty()) {
-            try {
-                holder.imgAdminFoodThumb.setImageURI(Uri.parse(food.getImageUrl()));
-            } catch (Exception e) {
-                holder.imgAdminFoodThumb.setImageResource(getImageResource(food.getName()));
+        String imageUrl = food.getImageUrl();
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+                holder.imgAdminFoodThumb.setImageResource(getImageResource(food.getName())); // placeholder
+                final String urlToLoad = imageUrl;
+                new Thread(() -> {
+                    try {
+                        java.net.URL url = new java.net.URL(urlToLoad);
+                        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                        conn.setDoInput(true);
+                        conn.connect();
+                        android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(conn.getInputStream());
+                        if (bmp != null) {
+                            android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                            mainHandler.post(() -> holder.imgAdminFoodThumb.setImageBitmap(bmp));
+                        }
+                    } catch (Exception e) {
+                        android.util.Log.e("AdminFoodAdapter", "Error loading image: " + e.getMessage());
+                    }
+                }).start();
+            } else {
+                try {
+                    holder.imgAdminFoodThumb.setImageURI(Uri.parse(imageUrl));
+                } catch (Exception e) {
+                    holder.imgAdminFoodThumb.setImageResource(getImageResource(food.getName()));
+                }
             }
         } else {
             holder.imgAdminFoodThumb.setImageResource(getImageResource(food.getName()));

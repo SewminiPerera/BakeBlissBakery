@@ -301,6 +301,28 @@
                         android:textSize="14sp" />
                 </LinearLayout>
 
+                <!-- Upload progress indicator -->
+                <ProgressBar
+                    android:id="@+id/progressUpload"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:layout_marginBottom="12dp"
+                    android:indeterminate="true"
+                    android:progressTint="#FF5722"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvUploadingHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Uploading photo..."
+                    android:textColor="#FF5722"
+                    android:textSize="13sp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="10dp"
+                    android:visibility="gone" />
+
                 <!-- Save Button -->
                 <Button
                     android:id="@+id/btnSaveFood"

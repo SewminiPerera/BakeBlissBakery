@@ -58,11 +58,33 @@ public class FoodAdapter extends RecyclerView.Adapter<FoodAdapter.FoodViewHolder
         holder.tvName.setText(food.getName());
         holder.tvPrice.setText(String.format("Rs. %.2f", food.getPrice()));
 
-        if (food.getImageUrl() != null && !food.getImageUrl().trim().isEmpty()) {
-            try {
-                holder.imgFood.setImageURI(Uri.parse(food.getImageUrl()));
-            } catch (Exception e) {
-                holder.imgFood.setImageResource(getImageResource(food.getName()));
+        String imageUrl = food.getImageUrl();
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+                // Load remote Firebase Storage image on background thread
+                holder.imgFood.setImageResource(getImageResource(food.getName())); // placeholder
+                final String urlToLoad = imageUrl;
+                new Thread(() -> {
+                    try {
+                        java.net.URL url = new java.net.URL(urlToLoad);
+                        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                        conn.setDoInput(true);
+                        conn.connect();
+                        android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(conn.getInputStream());
+                        if (bmp != null) {
+                            android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                            mainHandler.post(() -> holder.imgFood.setImageBitmap(bmp));
+                        }
+                    } catch (Exception e) {
+                        android.util.Log.e("FoodAdapter", "Error loading image: " + e.getMessage());
+                    }
+                }).start();
+            } else {
+                try {
+                    holder.imgFood.setImageURI(android.net.Uri.parse(imageUrl));
+                } catch (Exception e) {
+                    holder.imgFood.setImageResource(getImageResource(food.getName()));
+                }
             }
         } else {
             holder.imgFood.setImageResource(getImageResource(food.getName()));

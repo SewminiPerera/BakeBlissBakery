@@ -1,4 +1,4 @@
-package com.example.bakebliss_bakery.activities;
+﻿package com.example.bakebliss_bakery.activities;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -13,6 +13,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,10 +29,10 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.bakebliss_bakery.R;
 import com.example.bakebliss_bakery.database.DBHelper;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import java.util.UUID;
 
 public class AdminAddEditFoodActivity extends AppCompatActivity {
 
@@ -44,38 +45,19 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
     LinearLayout layoutPhotoPlaceholder, layoutDiscountField;
     android.widget.Switch switchSuperDeal;
     EditText etDiscountPercent;
+    ProgressBar progressUpload;
 
     DBHelper dbHelper;
 
     boolean isEditMode = false;
     String foodDocId = "";
     String selectedImageUriString = "";
+    Uri pendingLocalUri = null;
 
     private static final String[] CATEGORIES = {"Burger", "Pastry", "Cake", "Bun", "Beverage"};
 
-    // Modern Android Photo Picker
-    private final ActivityResultLauncher<PickVisualMediaRequest> photoPickerLauncher =
-            registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
-                if (uri != null) {
-                    String localUri = saveImageToInternalStorage(uri);
-                    selectedImageUriString = localUri;
-                    displayFoodImage(localUri);
-                }
-            });
-
-    // Fallback Gallery Picker
-    private final ActivityResultLauncher<Intent> fallbackGalleryLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    Uri selectedUri = result.getData().getData();
-                    if (selectedUri != null) {
-                        String localUri = saveImageToInternalStorage(selectedUri);
-                        selectedImageUriString = localUri;
-                        displayFoodImage(localUri);
-                    }
-                }
-            });
+    private ActivityResultLauncher<PickVisualMediaRequest> photoPickerLauncher;
+    private ActivityResultLauncher<Intent> fallbackGalleryLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,9 +65,28 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_admin_add_edit_food);
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().hide();
-        }
+        if (getSupportActionBar() != null) getSupportActionBar().hide();
+
+        photoPickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.PickVisualMedia(),
+                uri -> {
+                    if (uri != null) {
+                        pendingLocalUri = uri;
+                        displayLocalImage(uri);
+                    }
+                });
+
+        fallbackGalleryLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Uri selectedUri = result.getData().getData();
+                        if (selectedUri != null) {
+                            pendingLocalUri = selectedUri;
+                            displayLocalImage(selectedUri);
+                        }
+                    }
+                });
 
         dbHelper = new DBHelper(this);
 
@@ -101,41 +102,34 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
         switchSuperDeal        = findViewById(R.id.switchSuperDeal);
         etDiscountPercent      = findViewById(R.id.etDiscountPercent);
         layoutDiscountField    = findViewById(R.id.layoutDiscountField);
+        progressUpload         = findViewById(R.id.progressUpload);
 
-        // Show/hide discount field based on Super Deal switch
-        switchSuperDeal.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            layoutDiscountField.setVisibility(isChecked ? android.view.View.VISIBLE : android.view.View.GONE);
-        });
+        switchSuperDeal.setOnCheckedChangeListener((buttonView, isChecked) ->
+                layoutDiscountField.setVisibility(isChecked ? View.VISIBLE : View.GONE));
 
         View btnBack = findViewById(R.id.btnBackAdminForm);
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
-        }
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
-        // Tap to choose image
-        if (frameAdminFoodPhoto != null) {
+        if (frameAdminFoodPhoto != null)
             frameAdminFoodPhoto.setOnClickListener(v -> choosePhoto());
-        }
 
-        // Populate category spinner
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_item, CATEGORIES);
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCategory.setAdapter(spinnerAdapter);
 
-        // Check if we are editing an existing item
         isEditMode = getIntent().getBooleanExtra("EDIT_MODE", false);
 
         if (isEditMode) {
-            tvFormTitle.setText("✏️ Edit Food Item");
+            tvFormTitle.setText("Edit Food Item");
             btnSaveFood.setText("Update Item");
 
-            foodDocId = getIntent().getStringExtra("FOOD_DOC_ID");
-            String name     = getIntent().getStringExtra("FOOD_NAME");
-            String desc     = getIntent().getStringExtra("FOOD_DESC");
-            double price    = getIntent().getDoubleExtra("FOOD_PRICE", 0.0);
-            String category = getIntent().getStringExtra("FOOD_CATEGORY");
-            String image    = getIntent().getStringExtra("FOOD_IMAGE");
+            foodDocId           = getIntent().getStringExtra("FOOD_DOC_ID");
+            String name         = getIntent().getStringExtra("FOOD_NAME");
+            String desc         = getIntent().getStringExtra("FOOD_DESC");
+            double price        = getIntent().getDoubleExtra("FOOD_PRICE", 0.0);
+            String category     = getIntent().getStringExtra("FOOD_CATEGORY");
+            String image        = getIntent().getStringExtra("FOOD_IMAGE");
             boolean isSuperDeal = getIntent().getBooleanExtra("IS_SUPER_DEAL", false);
             double discountPct  = getIntent().getDoubleExtra("DISCOUNT_PERCENT", 0.0);
 
@@ -145,16 +139,15 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
 
             switchSuperDeal.setChecked(isSuperDeal);
             if (isSuperDeal) {
-                layoutDiscountField.setVisibility(android.view.View.VISIBLE);
+                layoutDiscountField.setVisibility(View.VISIBLE);
                 etDiscountPercent.setText(discountPct > 0 ? String.valueOf((int) discountPct) : "");
             }
 
             if (image != null && !image.isEmpty()) {
                 selectedImageUriString = image;
-                displayFoodImage(image);
+                displayImageFromUrl(image);
             }
 
-            // Pre-select the category in the spinner
             if (category != null) {
                 for (int i = 0; i < CATEGORIES.length; i++) {
                     if (CATEGORIES[i].equalsIgnoreCase(category)) {
@@ -164,7 +157,7 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
                 }
             }
         } else {
-            tvFormTitle.setText("➕ Add New Food Item");
+            tvFormTitle.setText("Add New Food Item");
             btnSaveFood.setText("Add Item");
         }
 
@@ -182,8 +175,7 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
             photoPickerLauncher.launch(
                     new PickVisualMediaRequest.Builder()
                             .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
-                            .build()
-            );
+                            .build());
         } else {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("image/*");
@@ -192,48 +184,42 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
         }
     }
 
-    private void displayFoodImage(String uriString) {
-        if (uriString != null && !uriString.trim().isEmpty()) {
-            try {
-                imgAdminFoodPreview.setImageURI(Uri.parse(uriString));
-                imgAdminFoodPreview.setVisibility(View.VISIBLE);
-                if (layoutPhotoPlaceholder != null) {
-                    layoutPhotoPlaceholder.setVisibility(View.GONE);
-                }
-                return;
-            } catch (Exception e) {
-                Log.e("AdminAddEditFood", "Error loading preview image: " + e.getMessage());
-            }
-        }
-        if (imgAdminFoodPreview != null) {
-            imgAdminFoodPreview.setVisibility(View.GONE);
-        }
-        if (layoutPhotoPlaceholder != null) {
-            layoutPhotoPlaceholder.setVisibility(View.VISIBLE);
+    private void displayLocalImage(Uri localUri) {
+        try {
+            imgAdminFoodPreview.setImageURI(null);
+            imgAdminFoodPreview.setImageURI(localUri);
+            imgAdminFoodPreview.setVisibility(View.VISIBLE);
+            if (layoutPhotoPlaceholder != null) layoutPhotoPlaceholder.setVisibility(View.GONE);
+        } catch (Exception e) {
+            Log.e("AdminAddEditFood", "Error showing local preview: " + e.getMessage());
         }
     }
 
-    private String saveImageToInternalStorage(Uri sourceUri) {
-        if (sourceUri == null) return "";
-        try {
-            InputStream inputStream = getContentResolver().openInputStream(sourceUri);
-            if (inputStream == null) return sourceUri.toString();
-            File dir = new File(getFilesDir(), "food_images");
-            if (!dir.exists()) dir.mkdirs();
-            File destFile = new File(dir, "food_" + System.currentTimeMillis() + ".jpg");
-            FileOutputStream outputStream = new FileOutputStream(destFile);
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
+    private void displayImageFromUrl(String url) {
+        if (url == null || url.trim().isEmpty()) return;
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+            imgAdminFoodPreview.setVisibility(View.VISIBLE);
+            if (layoutPhotoPlaceholder != null) layoutPhotoPlaceholder.setVisibility(View.GONE);
+            new Thread(() -> {
+                try {
+                    java.net.URL imgUrl = new java.net.URL(url);
+                    java.net.HttpURLConnection connection = (java.net.HttpURLConnection) imgUrl.openConnection();
+                    connection.setDoInput(true);
+                    connection.connect();
+                    android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(connection.getInputStream());
+                    runOnUiThread(() -> { if (bmp != null) imgAdminFoodPreview.setImageBitmap(bmp); });
+                } catch (Exception ex) {
+                    Log.e("AdminAddEditFood", "Error loading remote image: " + ex.getMessage());
+                }
+            }).start();
+        } else {
+            try {
+                imgAdminFoodPreview.setImageURI(Uri.parse(url));
+                imgAdminFoodPreview.setVisibility(View.VISIBLE);
+                if (layoutPhotoPlaceholder != null) layoutPhotoPlaceholder.setVisibility(View.GONE);
+            } catch (Exception e) {
+                Log.e("AdminAddEditFood", "Error loading local image: " + e.getMessage());
             }
-            outputStream.flush();
-            outputStream.close();
-            inputStream.close();
-            return Uri.fromFile(destFile).toString();
-        } catch (Exception e) {
-            Log.e("AdminAddEditFood", "Error copying image to internal storage: " + e.getMessage());
-            return sourceUri.toString();
         }
     }
 
@@ -244,80 +230,88 @@ public class AdminAddEditFoodActivity extends AppCompatActivity {
         String category = spinnerCategory.getSelectedItem().toString();
         boolean isSuperDeal = switchSuperDeal.isChecked();
 
-        // Validation
-        if (TextUtils.isEmpty(name)) {
-            etFoodName.setError("Food name is required");
-            etFoodName.requestFocus();
-            return;
-        }
-        if (TextUtils.isEmpty(desc)) {
-            etFoodDesc.setError("Description is required");
-            etFoodDesc.requestFocus();
-            return;
-        }
-        if (TextUtils.isEmpty(priceStr)) {
-            etFoodPrice.setError("Price is required");
-            etFoodPrice.requestFocus();
-            return;
-        }
+        if (TextUtils.isEmpty(name)) { etFoodName.setError("Food name is required"); etFoodName.requestFocus(); return; }
+        if (TextUtils.isEmpty(desc)) { etFoodDesc.setError("Description is required"); etFoodDesc.requestFocus(); return; }
+        if (TextUtils.isEmpty(priceStr)) { etFoodPrice.setError("Price is required"); etFoodPrice.requestFocus(); return; }
 
         double price;
         try {
             price = Double.parseDouble(priceStr);
-            if (price <= 0) {
-                etFoodPrice.setError("Price must be greater than 0");
-                return;
-            }
+            if (price <= 0) { etFoodPrice.setError("Price must be greater than 0"); return; }
         } catch (NumberFormatException e) {
-            etFoodPrice.setError("Enter a valid price");
-            return;
+            etFoodPrice.setError("Enter a valid price"); return;
         }
 
         double discountPercent = 0.0;
         if (isSuperDeal) {
             String discountStr = etDiscountPercent.getText().toString().trim();
-            if (TextUtils.isEmpty(discountStr)) {
-                etDiscountPercent.setError("Enter discount % for Super Deal");
-                etDiscountPercent.requestFocus();
-                return;
-            }
+            if (TextUtils.isEmpty(discountStr)) { etDiscountPercent.setError("Enter discount % for Super Deal"); etDiscountPercent.requestFocus(); return; }
             try {
                 discountPercent = Double.parseDouble(discountStr);
-                if (discountPercent <= 0 || discountPercent >= 100) {
-                    etDiscountPercent.setError("Discount must be between 1 and 99");
-                    return;
-                }
+                if (discountPercent <= 0 || discountPercent >= 100) { etDiscountPercent.setError("Discount must be between 1 and 99"); return; }
             } catch (NumberFormatException e) {
-                etDiscountPercent.setError("Enter a valid discount percentage");
-                return;
+                etDiscountPercent.setError("Enter a valid discount percentage"); return;
             }
         }
 
         btnSaveFood.setEnabled(false);
+        final double finalPrice    = price;
         final double finalDiscount = discountPercent;
 
-        if (isEditMode) {
-            // UPDATE existing food item
-            dbHelper.updateFoodItem(foodDocId, name, desc, price, category, selectedImageUriString, isSuperDeal, finalDiscount, success -> {
-                btnSaveFood.setEnabled(true);
-                if (success) {
-                    Toast.makeText(this, "\"" + name + "\" updated successfully!", Toast.LENGTH_SHORT).show();
-                    finish();
-                } else {
-                    Toast.makeText(this, "Update failed. Please try again.", Toast.LENGTH_SHORT).show();
-                }
-            });
+        if (pendingLocalUri != null) {
+            uploadImageThenSave(name, desc, finalPrice, category, isSuperDeal, finalDiscount);
         } else {
-            // CREATE new food item
-            dbHelper.addFoodItem(name, desc, price, category, selectedImageUriString, isSuperDeal, finalDiscount, success -> {
-                btnSaveFood.setEnabled(true);
-                if (success) {
-                    Toast.makeText(this, "\"" + name + "\" added successfully!", Toast.LENGTH_SHORT).show();
-                    finish();
-                } else {
-                    Toast.makeText(this, "Failed to add item. Please try again.", Toast.LENGTH_SHORT).show();
-                }
-            });
+            persistFood(name, desc, finalPrice, category, selectedImageUriString, isSuperDeal, finalDiscount);
+        }
+    }
+
+    private void uploadImageThenSave(String name, String desc, double price,
+                                     String category, boolean isSuperDeal, double discountPercent) {
+        if (progressUpload != null) progressUpload.setVisibility(View.VISIBLE);
+
+        StorageReference storageRef = FirebaseStorage.getInstance()
+                .getReference()
+                .child("food_images/" + UUID.randomUUID().toString() + ".jpg");
+
+        storageRef.putFile(pendingLocalUri)
+                .addOnSuccessListener(taskSnapshot ->
+                        storageRef.getDownloadUrl()
+                                .addOnSuccessListener(downloadUri -> {
+                                    String imageUrl = downloadUri.toString();
+                                    Log.d("AdminAddEditFood", "Image uploaded: " + imageUrl);
+                                    if (progressUpload != null) progressUpload.setVisibility(View.GONE);
+                                    persistFood(name, desc, price, category, imageUrl, isSuperDeal, discountPercent);
+                                })
+                                .addOnFailureListener(e -> {
+                                    if (progressUpload != null) progressUpload.setVisibility(View.GONE);
+                                    Log.e("AdminAddEditFood", "Failed to get download URL: " + e.getMessage());
+                                    Toast.makeText(this, "Image upload failed. Saving without image.", Toast.LENGTH_SHORT).show();
+                                    persistFood(name, desc, price, category, selectedImageUriString, isSuperDeal, discountPercent);
+                                }))
+                .addOnFailureListener(e -> {
+                    if (progressUpload != null) progressUpload.setVisibility(View.GONE);
+                    Log.e("AdminAddEditFood", "Image upload failed: " + e.getMessage());
+                    Toast.makeText(this, "Image upload failed. Saving without image.", Toast.LENGTH_SHORT).show();
+                    btnSaveFood.setEnabled(true);
+                });
+    }
+
+    private void persistFood(String name, String desc, double price, String category,
+                              String imageUrl, boolean isSuperDeal, double discountPercent) {
+        if (isEditMode) {
+            dbHelper.updateFoodItem(foodDocId, name, desc, price, category, imageUrl,
+                    isSuperDeal, discountPercent, success -> {
+                        btnSaveFood.setEnabled(true);
+                        if (success) { Toast.makeText(this, "\"" + name + "\" updated!", Toast.LENGTH_SHORT).show(); finish(); }
+                        else Toast.makeText(this, "Update failed. Please try again.", Toast.LENGTH_SHORT).show();
+                    });
+        } else {
+            dbHelper.addFoodItem(name, desc, price, category, imageUrl,
+                    isSuperDeal, discountPercent, success -> {
+                        btnSaveFood.setEnabled(true);
+                        if (success) { Toast.makeText(this, "\"" + name + "\" added!", Toast.LENGTH_SHORT).show(); finish(); }
+                        else Toast.makeText(this, "Failed to add item. Please try again.", Toast.LENGTH_SHORT).show();
+                    });
         }
     }
 }
