@@ -53,6 +53,9 @@ public class MyOrderActivity extends AppCompatActivity {
         sessionManager = new SessionManager(this);
         String username = sessionManager.getUsername();
 
+        rvOrders = findViewById(R.id.rvOrders);
+        layoutEmptyOrders = findViewById(R.id.layoutEmptyOrders);
+
         View btnBack = findViewById(R.id.btnBackOrders);
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());
@@ -61,7 +64,7 @@ public class MyOrderActivity extends AppCompatActivity {
         View btnClearOrders = findViewById(R.id.btnClearOrders);
         if (btnClearOrders != null) {
             btnClearOrders.setOnClickListener(v -> {
-                if (orderList.isEmpty()) {
+                if (orderList == null || orderList.isEmpty()) {
                     android.widget.Toast.makeText(this, "No orders to clear", android.widget.Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -71,11 +74,17 @@ public class MyOrderActivity extends AppCompatActivity {
                         .setPositiveButton("Clear All", (dialog, which) -> {
                             dbHelper.clearAllOrders(username, success -> {
                                 runOnUiThread(() -> {
-                                    orderList.clear();
-                                    orderAdapter.notifyDataSetChanged();
-                                    rvOrders.setVisibility(View.GONE);
-                                    layoutEmptyOrders.setVisibility(View.VISIBLE);
-                                    android.widget.Toast.makeText(MyOrderActivity.this, "Order history cleared!", android.widget.Toast.LENGTH_SHORT).show();
+                                    if (success) {
+                                        orderList.clear();
+                                        if (orderAdapter != null) {
+                                            orderAdapter.notifyDataSetChanged();
+                                        }
+                                        rvOrders.setVisibility(View.GONE);
+                                        layoutEmptyOrders.setVisibility(View.VISIBLE);
+                                        android.widget.Toast.makeText(MyOrderActivity.this, "Order history cleared!", android.widget.Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        android.widget.Toast.makeText(MyOrderActivity.this, "Failed to clear orders. Please try again.", android.widget.Toast.LENGTH_SHORT).show();
+                                    }
                                 });
                             });
                         })

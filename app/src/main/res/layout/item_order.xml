@@ -30,7 +30,7 @@
             android:layout_marginStart="15dp"
             android:orientation="vertical"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/tvOrderStatus"
+            app:layout_constraintEnd_toStartOf="@+id/layoutStatusAndActions"
             app:layout_constraintStart_toEndOf="@+id/imgOrderFood"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -58,7 +58,8 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
 
             <TextView
                 android:id="@+id/tvOrderStatus"

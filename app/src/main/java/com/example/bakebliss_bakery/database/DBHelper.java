@@ -593,7 +593,6 @@ public class DBHelper {
         firestore.collection(COLLECTION_USERS)
                 .document(docId)
                 .collection(SUB_COLLECTION_ORDERS)
-                .orderBy("order_date", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<OrderModel> list = new ArrayList<>();
@@ -601,22 +600,13 @@ public class DBHelper {
                         try {
                             String name = doc.getString("food_name");
                             String status = doc.getString("status");
-                            
-                            Double price = 0.0;
-                            try {
-                                price = doc.getDouble("total_price");
-                            } catch (Exception e) {
-                                // Fallback if type is wrong
-                            }
-                            
-                            Long qtyLong = 1L;
-                            try {
-                                qtyLong = doc.getLong("quantity");
-                            } catch (Exception e) {
-                                // Fallback
-                            }
-                            
+
+                            Double price = doc.getDouble("total_price");
+                            if (price == null) price = 0.0;
+
+                            Long qtyLong = doc.getLong("quantity");
                             int qty = (qtyLong != null) ? qtyLong.intValue() : 1;
+
                             String date = doc.getString("order_date");
                             String orderDocId = doc.getId();
 
@@ -624,7 +614,7 @@ public class DBHelper {
                                     orderDocId,
                                     name != null ? name : "",
                                     status != null ? status : "Completed",
-                                    price != null ? price : 0.0,
+                                    price,
                                     qty,
                                     date != null ? date : ""
                             ));
@@ -632,6 +622,10 @@ public class DBHelper {
                             Log.e(TAG, "Error parsing order document", e);
                         }
                     }
+                    Collections.sort(list, (o1, o2) -> {
+                        if (o1.getOrderDate() == null || o2.getOrderDate() == null) return 0;
+                        return o2.getOrderDate().compareTo(o1.getOrderDate());
+                    });
                     if (callback != null) callback.onCallback(list);
                 })
                 .addOnFailureListener(e -> {
