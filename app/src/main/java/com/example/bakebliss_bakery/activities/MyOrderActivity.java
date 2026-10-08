@@ -1,4 +1,4 @@
-package com.example.bakebliss_bakery.activities;
+﻿package com.example.bakebliss_bakery.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -38,6 +38,9 @@ public class MyOrderActivity extends AppCompatActivity {
     SessionManager sessionManager;
     BottomNavigationView bottomNavigationView;
 
+    // username as a class field so it is always available
+    String username;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,11 +52,18 @@ public class MyOrderActivity extends AppCompatActivity {
             getSupportActionBar().hide();
         }
 
-        dbHelper = new DBHelper(this);
+        dbHelper      = new DBHelper(this);
         sessionManager = new SessionManager(this);
-        String username = sessionManager.getUsername();
 
-        rvOrders = findViewById(R.id.rvOrders);
+        // Resolve username — fallback to Firebase UID if display name is empty
+        username = sessionManager.getUsername();
+        if (username == null || username.trim().isEmpty()) {
+            com.google.firebase.auth.FirebaseUser cu =
+                    com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            if (cu != null) username = cu.getUid();
+        }
+
+        rvOrders          = findViewById(R.id.rvOrders);
         layoutEmptyOrders = findViewById(R.id.layoutEmptyOrders);
 
         View btnBack = findViewById(R.id.btnBackOrders);
@@ -76,14 +86,14 @@ public class MyOrderActivity extends AppCompatActivity {
                                 runOnUiThread(() -> {
                                     if (success) {
                                         orderList.clear();
-                                        if (orderAdapter != null) {
-                                            orderAdapter.notifyDataSetChanged();
-                                        }
+                                        if (orderAdapter != null) orderAdapter.notifyDataSetChanged();
                                         rvOrders.setVisibility(View.GONE);
                                         layoutEmptyOrders.setVisibility(View.VISIBLE);
-                                        android.widget.Toast.makeText(MyOrderActivity.this, "Order history cleared!", android.widget.Toast.LENGTH_SHORT).show();
+                                        android.widget.Toast.makeText(MyOrderActivity.this,
+                                                "Order history cleared!", android.widget.Toast.LENGTH_SHORT).show();
                                     } else {
-                                        android.widget.Toast.makeText(MyOrderActivity.this, "Failed to clear orders. Please try again.", android.widget.Toast.LENGTH_SHORT).show();
+                                        android.widget.Toast.makeText(MyOrderActivity.this,
+                                                "Failed to clear orders. Please try again.", android.widget.Toast.LENGTH_SHORT).show();
                                     }
                                 });
                             });
@@ -94,16 +104,16 @@ public class MyOrderActivity extends AppCompatActivity {
         }
 
         rvOrders.setLayoutManager(new LinearLayoutManager(this));
-        orderList = new ArrayList<>();
-        orderAdapter = new OrderAdapter(this, orderList, dbHelper, username, () -> {
-            if (orderList.isEmpty()) {
-                rvOrders.setVisibility(View.GONE);
-                layoutEmptyOrders.setVisibility(View.VISIBLE);
-            }
-        });
+        orderList   = new ArrayList<>();
+        orderAdapter = new OrderAdapter(this, orderList, dbHelper, username, () ->
+                runOnUiThread(() -> {
+                    if (orderList != null && orderList.isEmpty()) {
+                        rvOrders.setVisibility(View.GONE);
+                        layoutEmptyOrders.setVisibility(View.VISIBLE);
+                    }
+                })
+        );
         rvOrders.setAdapter(orderAdapter);
-
-        loadAllOrders(username);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setSelectedItemId(R.id.nav_orders);
@@ -112,7 +122,6 @@ public class MyOrderActivity extends AppCompatActivity {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 int id = item.getItemId();
-
                 if (id == R.id.nav_home) {
                     Intent intent = new Intent(MyOrderActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -144,38 +153,55 @@ public class MyOrderActivity extends AppCompatActivity {
             bottomNavigationView.setPadding(0, 0, 0, systemBars.bottom);
             return insets;
         });
+        // loadAllOrders NOT called here — onResume() always fires after onCreate() and does the first load.
     }
 
-    private void loadAllOrders(String username) {
-        // Show a loading state while fetching
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh username in case Firebase auth state updated since onCreate
+        String freshUsername = sessionManager.getUsername();
+        if (freshUsername == null || freshUsername.trim().isEmpty()) {
+            com.google.firebase.auth.FirebaseUser cu =
+                    com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            if (cu != null) freshUsername = cu.getUid();
+        }
+        if (freshUsername != null && !freshUsername.trim().isEmpty()) {
+            username = freshUsername;
+        }
+        loadAllOrders(username);
+    }
+
+    private void loadAllOrders(String uname) {
+        if (uname == null || uname.trim().isEmpty()) {
+            runOnUiThread(() -> {
+                rvOrders.setVisibility(View.GONE);
+                layoutEmptyOrders.setVisibility(View.VISIBLE);
+            });
+            return;
+        }
+
         runOnUiThread(() -> {
             rvOrders.setVisibility(View.GONE);
             layoutEmptyOrders.setVisibility(View.GONE);
         });
 
-        dbHelper.getUserOrders(username, orders -> {
+        dbHelper.getUserOrders(uname, orders -> {
             runOnUiThread(() -> {
+                if (orderList == null) orderList = new ArrayList<>();
                 orderList.clear();
                 if (orders != null && !orders.isEmpty()) {
                     orderList.addAll(orders);
                 }
-
                 if (orderList.isEmpty()) {
                     rvOrders.setVisibility(View.GONE);
                     layoutEmptyOrders.setVisibility(View.VISIBLE);
                 } else {
                     layoutEmptyOrders.setVisibility(View.GONE);
                     rvOrders.setVisibility(View.VISIBLE);
-                    orderAdapter.notifyDataSetChanged();
+                    if (orderAdapter != null) orderAdapter.notifyDataSetChanged();
                 }
             });
         });
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        String username = sessionManager.getUsername();
-        loadAllOrders(username);
     }
 }
