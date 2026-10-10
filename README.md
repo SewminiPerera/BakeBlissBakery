@@ -18,6 +18,7 @@ Developed by **Team CodeSphere**, BakeBliss Bakery modernizes the traditional ba
 
 ## ✨ UI Showcase
 
+### 🛍️ Customer Ordering Journey
 <table>
   <tr>
     <td align="center"><b>Welcome</b></td>
@@ -25,7 +26,6 @@ Developed by **Team CodeSphere**, BakeBliss Bakery modernizes the traditional ba
     <td align="center"><b>Register</b></td>
     <td align="center"><b>Home / Catalog</b></td>
     <td align="center"><b>Item Details</b></td>
-    <td align="center"><b>Cart</b></td>
   </tr>
   <tr>
     <td><img src="screenshots/Welcome.png" width="150" alt="Welcome Screen"></td>
@@ -33,23 +33,34 @@ Developed by **Team CodeSphere**, BakeBliss Bakery modernizes the traditional ba
     <td><img src="screenshots/register.png" width="150" alt="Register Screen"></td>
     <td><img src="screenshots/home.png" width="150" alt="Home Screen"></td>
     <td><img src="screenshots/details.png" width="150" alt="Details Screen"></td>
-    <td><img src="screenshots/cart.png" width="150" alt="Cart Screen"></td>
   </tr>
   <tr>
+    <td align="center"><b>Cart</b></td>
     <td align="center"><b>Payment Checkout</b></td>
     <td align="center"><b>Order Confirmation</b></td>
     <td align="center"><b>My Orders</b></td>
-    <td align="center"><b>Profile</b></td>
-    <td align="center"><b>Edit Profile</b></td>
-    <td align="center"><b>Admin Dashboard</b></td>
+    <td align="center"><b>User Profile</b></td>
   </tr>
   <tr>
+    <td><img src="screenshots/cart.png" width="150" alt="Cart Screen"></td>
     <td><img src="screenshots/payment.png" width="150" alt="Payment Screen"></td>
     <td><img src="screenshots/order_confirm.png" width="150" alt="Order Confirm Screen"></td>
     <td><img src="screenshots/orders.jpeg" width="150" alt="Orders Screen"></td>
     <td><img src="screenshots/profile.png" width="150" alt="Profile Screen"></td>
-    <td><img src="screenshots/edit_profile.jpeg" width="150" alt="Edit Profile Screen"></td>
-    <td align="center"><i>CRUD Portal<br>(Admin Panel)</i></td>
+  </tr>
+</table>
+
+### ⚙️ Profile Customization & Admin Portal (CRUD)
+<table>
+  <tr>
+    <td align="center"><b>Edit Profile</b></td>
+    <td align="center"><b>Admin Dashboard (Inventory)</b></td>
+    <td align="center"><b>Admin Add / Edit Product</b></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/edit_profile.png" width="170" alt="Edit Profile Screen"></td>
+    <td><img src="screenshots/Admin.png" width="170" alt="Admin Dashboard Screen"></td>
+    <td><img src="screenshots/edit%20food.png" width="170" alt="Admin Add/Edit Food Screen"></td>
   </tr>
 </table>
 
@@ -203,10 +214,10 @@ com.example.bakebliss_bakery
 | Index No | Registration No | Name | Role & Core Responsibilities | GitHub Profile |
 | :---: | :---: | :--- | :--- | :---: |
 | **2063** | ITT/2022/083 | **P.D.S. Perera** | **Project Lead & Auth/Profile:** Firebase Authentication & Google Sign-In integration, Session Management, Profile View & Edit, Edge-to-Edge UI integration | [@SewminiPerera](https://github.com/SewminiPerera) |
-| **2001** | ITT/2022/020 | **B.L.L. Chathurangani** | **Menu & Catalog:** Dynamic Category Filtering (Burger, Pastry, Cake, Bun, Beverage), Real-time Live Search, Food Details screen & quantity calculations | — |
-| **2054** | ITT/2022/074 | **M.N.M. Nazmy** | **Cart & Computations:** Shopping Cart UI, Increment/Decrement quantity logic, Item removal, Real-time Subtotal & Delivery Fee calculation | — |
-| **2098** | ITT/2022/118 | **R.M. Yaseer** | **Payment & Notifications:** Card & Cash Payment validation, Order Confirmation flow, System Notification Helper & Promotional Alerts | — |
-| **2032** | ITT/2022/052 | **K.I.P. Katugampala** | **Admin Portal & Order History:** Admin Product CRUD Operations (Create, Read, Update, Delete), Inventory management, Unified Order History | — |
+| **2001** | ITT/2022/020 | **B.L.L. Chathurangani** | **Menu & Catalog:** Dynamic Category Filtering (Burger, Pastry, Cake, Bun, Beverage), Real-time Live Search, Food Details screen & quantity calculations | [@Loshani12](https://github.com/Loshani12) |
+| **2054** | ITT/2022/074 | **M.N.M. Nazmy** | **Cart & Computations:** Shopping Cart UI, Increment/Decrement quantity logic, Item removal, Real-time Subtotal & Delivery Fee calculation | [@nazmy5656](https://github.com/nazmy5656) |
+| **2098** | ITT/2022/118 | **R.M. Yaseer** | **Payment & Notifications:** Card & Cash Payment validation, Order Confirmation flow, System Notification Helper & Promotional Alerts | [@codeBuilt864](https://github.com/codeBuilt864) |
+| **2032** | ITT/2022/052 | **K.I.P. Katugampala** | **Admin Portal & Order History:** Admin Product CRUD Operations (Create, Read, Update, Delete), Inventory management, Unified Order History | [@ITT-052](https://github.com/ITT-052) |
 
 ---
 
