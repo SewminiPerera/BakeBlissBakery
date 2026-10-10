@@ -44,6 +44,10 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
         this(context, orderList, null, null, null);
     }
 
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -54,20 +58,28 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.ViewHolder> 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         OrderModel order = orderList.get(position);
+        if (order == null) return;
 
-        holder.tvOrderFoodName.setText(order.getFoodName());
-        holder.tvOrderPriceQty.setText("Rs. " + order.getPrice() + "  |  Qty: " + order.getQuantity());
+        String foodName = order.getFoodName() != null ? order.getFoodName() : "Bakery Item";
+        holder.tvOrderFoodName.setText(foodName);
+        holder.tvOrderPriceQty.setText(String.format(java.util.Locale.getDefault(), "Rs. %.2f  |  Qty: %d", order.getPrice(), order.getQuantity()));
 
-        holder.imgOrderFood.setImageResource(getImageResource(order.getFoodName()));
+        holder.imgOrderFood.setImageResource(getImageResource(foodName));
 
-        holder.tvOrderStatus.setText(order.getStatus());
+        String status = (order.getStatus() != null && !order.getStatus().trim().isEmpty())
+                ? order.getStatus() : "Completed";
+        holder.tvOrderStatus.setText(status);
 
-        if (order.getStatus().equalsIgnoreCase("Completed")) {
+        if ("Completed".equalsIgnoreCase(status)) {
             holder.tvOrderStatus.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
+        } else {
+            holder.tvOrderStatus.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
+        }
+
+        if (order.getOrderDate() != null && !order.getOrderDate().trim().isEmpty()) {
             holder.tvOrderDate.setText(order.getOrderDate());
             holder.tvOrderDate.setVisibility(View.VISIBLE);
         } else {
-            holder.tvOrderStatus.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
             holder.tvOrderDate.setVisibility(View.GONE);
         }
 

@@ -164,29 +164,40 @@ public class MyOrderActivity extends AppCompatActivity {
         if (freshUsername == null || freshUsername.trim().isEmpty()) {
             com.google.firebase.auth.FirebaseUser cu =
                     com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
-            if (cu != null) freshUsername = cu.getUid();
+            if (cu != null) {
+                if (cu.getDisplayName() != null && !cu.getDisplayName().trim().isEmpty()) {
+                    freshUsername = cu.getDisplayName().trim();
+                } else if (cu.getEmail() != null && !cu.getEmail().trim().isEmpty()) {
+                    freshUsername = cu.getEmail().split("@")[0];
+                } else {
+                    freshUsername = cu.getUid();
+                }
+            }
         }
         if (freshUsername != null && !freshUsername.trim().isEmpty()) {
             username = freshUsername;
+        }
+        if (orderAdapter != null) {
+            orderAdapter.setUsername(username);
         }
         loadAllOrders(username);
     }
 
     private void loadAllOrders(String uname) {
         if (uname == null || uname.trim().isEmpty()) {
-            runOnUiThread(() -> {
-                rvOrders.setVisibility(View.GONE);
-                layoutEmptyOrders.setVisibility(View.VISIBLE);
-            });
-            return;
+            com.google.firebase.auth.FirebaseUser cu =
+                    com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            if (cu != null) {
+                uname = cu.getUid();
+            }
         }
 
-        runOnUiThread(() -> {
-            rvOrders.setVisibility(View.GONE);
-            layoutEmptyOrders.setVisibility(View.GONE);
-        });
+        final String targetUser = (uname != null && !uname.trim().isEmpty()) ? uname : "guest_user";
+        if (orderAdapter != null) {
+            orderAdapter.setUsername(targetUser);
+        }
 
-        dbHelper.getUserOrders(uname, orders -> {
+        dbHelper.getUserOrders(targetUser, orders -> {
             runOnUiThread(() -> {
                 if (orderList == null) orderList = new ArrayList<>();
                 orderList.clear();

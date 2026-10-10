@@ -574,10 +574,10 @@ public class DBHelper {
         // Commit orders
         batch.commit()
                 .addOnSuccessListener(aVoid -> {
-                    // Clear the cart
-                    clearCart(username, clearSuccess -> {
-                        if (callback != null) callback.onComplete(true);
-                    });
+                    Log.d(TAG, "Successfully saved " + cartItems.size() + " order(s) for user: " + docId);
+                    if (callback != null) callback.onComplete(true);
+                    // Clear the cart asynchronously
+                    clearCart(username, null);
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Failed to place orders: " + e.getMessage());
@@ -586,51 +586,127 @@ public class DBHelper {
     }
 
     /**
+     * Helper to safely parse Firestore order documents without ClassCastException.
+     */
+    private List<OrderModel> parseOrderDocuments(Iterable<QueryDocumentSnapshot> snapshots) {
+        List<OrderModel> list = new ArrayList<>();
+        if (snapshots == null) return list;
+        for (QueryDocumentSnapshot doc : snapshots) {
+            try {
+                String name = doc.getString("food_name");
+                if (name == null || name.trim().isEmpty()) name = doc.getString("foodName");
+                if (name == null || name.trim().isEmpty()) name = doc.getString("name");
+                if (name == null) name = "Bakery Item";
+
+                String status = doc.getString("status");
+                if (status == null || status.trim().isEmpty()) status = "Completed";
+
+                double price = 0.0;
+                Object rawPrice = doc.get("total_price");
+                if (rawPrice == null) rawPrice = doc.get("totalPrice");
+                if (rawPrice == null) rawPrice = doc.get("price");
+                if (rawPrice instanceof Number) {
+                    price = ((Number) rawPrice).doubleValue();
+                } else if (rawPrice != null) {
+                    try {
+                        price = Double.parseDouble(rawPrice.toString().replaceAll("[^0-9.]", ""));
+                    } catch (Exception ignored) {}
+                }
+
+                int qty = 1;
+                Object rawQty = doc.get("quantity");
+                if (rawQty == null) rawQty = doc.get("qty");
+                if (rawQty instanceof Number) {
+                    qty = ((Number) rawQty).intValue();
+                } else if (rawQty != null) {
+                    try {
+                        qty = Integer.parseInt(rawQty.toString().replaceAll("[^0-9]", ""));
+                    } catch (Exception ignored) {}
+                }
+
+                String date = doc.getString("order_date");
+                if (date == null || date.trim().isEmpty()) date = doc.getString("date");
+                if (date == null) date = "";
+
+                String orderDocId = doc.getId();
+
+                list.add(new OrderModel(
+                        orderDocId,
+                        name,
+                        status,
+                        price,
+                        qty,
+                        date
+                ));
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing order document: " + doc.getId(), e);
+            }
+        }
+        return list;
+    }
+
+    private void sortAndDeliverOrders(List<OrderModel> list, OrderListCallback callback) {
+        if (list != null) {
+            Collections.sort(list, (o1, o2) -> {
+                if (o1.getOrderDate() == null || o2.getOrderDate() == null) return 0;
+                return o2.getOrderDate().compareTo(o1.getOrderDate());
+            });
+        }
+        if (callback != null) {
+            callback.onCallback(list != null ? list : new ArrayList<>());
+        }
+    }
+
+    /**
      * Fetch user's orders from Firestore ordered by date descending.
+     * Safely queries primary UID docId, and falls back to username if needed.
      */
     public void getUserOrders(String username, OrderListCallback callback) {
-        String docId = resolveUserDocId(username);
+        String primaryDocId = resolveUserDocId(username);
+
         firestore.collection(COLLECTION_USERS)
-                .document(docId)
+                .document(primaryDocId)
                 .collection(SUB_COLLECTION_ORDERS)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<OrderModel> list = new ArrayList<>();
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        try {
-                            String name = doc.getString("food_name");
-                            String status = doc.getString("status");
+                    List<OrderModel> list = parseOrderDocuments(queryDocumentSnapshots);
 
-                            Double price = doc.getDouble("total_price");
-                            if (price == null) price = 0.0;
+                    String secondaryDocId = (username != null && !username.trim().isEmpty())
+                            ? username.trim().toLowerCase(Locale.ROOT) : null;
 
-                            Long qtyLong = doc.getLong("quantity");
-                            int qty = (qtyLong != null) ? qtyLong.intValue() : 1;
-
-                            String date = doc.getString("order_date");
-                            String orderDocId = doc.getId();
-
-                            list.add(new OrderModel(
-                                    orderDocId,
-                                    name != null ? name : "",
-                                    status != null ? status : "Completed",
-                                    price,
-                                    qty,
-                                    date != null ? date : ""
-                            ));
-                        } catch (Exception e) {
-                            Log.e(TAG, "Error parsing order document", e);
-                        }
+                    if (!list.isEmpty() || secondaryDocId == null || secondaryDocId.equalsIgnoreCase(primaryDocId)) {
+                        sortAndDeliverOrders(list, callback);
+                        return;
                     }
-                    Collections.sort(list, (o1, o2) -> {
-                        if (o1.getOrderDate() == null || o2.getOrderDate() == null) return 0;
-                        return o2.getOrderDate().compareTo(o1.getOrderDate());
-                    });
-                    if (callback != null) callback.onCallback(list);
+
+                    // Fallback to username doc in case orders were placed before auth resolved
+                    firestore.collection(COLLECTION_USERS)
+                            .document(secondaryDocId)
+                            .collection(SUB_COLLECTION_ORDERS)
+                            .get()
+                            .addOnSuccessListener(secondarySnapshots -> {
+                                List<OrderModel> secondaryList = parseOrderDocuments(secondarySnapshots);
+                                sortAndDeliverOrders(secondaryList, callback);
+                            })
+                            .addOnFailureListener(e -> sortAndDeliverOrders(list, callback));
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error fetching user orders: " + e.getMessage());
-                    if (callback != null) callback.onCallback(new ArrayList<>());
+                    String secondaryDocId = (username != null && !username.trim().isEmpty())
+                            ? username.trim().toLowerCase(Locale.ROOT) : null;
+                    if (secondaryDocId != null && !secondaryDocId.equalsIgnoreCase(primaryDocId)) {
+                        firestore.collection(COLLECTION_USERS)
+                                .document(secondaryDocId)
+                                .collection(SUB_COLLECTION_ORDERS)
+                                .get()
+                                .addOnSuccessListener(secondarySnapshots -> {
+                                    List<OrderModel> secondaryList = parseOrderDocuments(secondarySnapshots);
+                                    sortAndDeliverOrders(secondaryList, callback);
+                                })
+                                .addOnFailureListener(err -> sortAndDeliverOrders(new ArrayList<>(), callback));
+                    } else {
+                        sortAndDeliverOrders(new ArrayList<>(), callback);
+                    }
                 });
     }
 
@@ -648,8 +724,19 @@ public class DBHelper {
                     if (callback != null) callback.onComplete(true);
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error deleting order: " + e.getMessage());
-                    if (callback != null) callback.onComplete(false);
+                    String secondaryDocId = (username != null && !username.trim().isEmpty())
+                            ? username.trim().toLowerCase(Locale.ROOT) : null;
+                    if (secondaryDocId != null && !secondaryDocId.equalsIgnoreCase(docId)) {
+                        firestore.collection(COLLECTION_USERS)
+                                .document(secondaryDocId)
+                                .collection(SUB_COLLECTION_ORDERS)
+                                .document(orderId)
+                                .delete()
+                                .addOnSuccessListener(v -> { if (callback != null) callback.onComplete(true); })
+                                .addOnFailureListener(err -> { if (callback != null) callback.onComplete(false); });
+                    } else {
+                        if (callback != null) callback.onComplete(false);
+                    }
                 });
     }
 
@@ -658,8 +745,19 @@ public class DBHelper {
      */
     public void clearAllOrders(String username, ActionCallback callback) {
         String docId = resolveUserDocId(username);
+        deleteSubcollectionOrders(docId, success -> {
+            String secondaryDocId = (username != null && !username.trim().isEmpty())
+                    ? username.trim().toLowerCase(Locale.ROOT) : null;
+            if (secondaryDocId != null && !secondaryDocId.equalsIgnoreCase(docId)) {
+                deleteSubcollectionOrders(secondaryDocId, null);
+            }
+            if (callback != null) callback.onComplete(success);
+        });
+    }
+
+    private void deleteSubcollectionOrders(String userDocId, ActionCallback callback) {
         CollectionReference ordersRef = firestore.collection(COLLECTION_USERS)
-                .document(docId)
+                .document(userDocId)
                 .collection(SUB_COLLECTION_ORDERS);
 
         ordersRef.get().addOnSuccessListener(queryDocumentSnapshots -> {
@@ -676,11 +774,11 @@ public class DBHelper {
                         if (callback != null) callback.onComplete(true);
                     })
                     .addOnFailureListener(e -> {
-                        Log.e(TAG, "Error clearing orders: " + e.getMessage());
+                        Log.e(TAG, "Error clearing orders for " + userDocId + ": " + e.getMessage());
                         if (callback != null) callback.onComplete(false);
                     });
         }).addOnFailureListener(e -> {
-            Log.e(TAG, "Error fetching orders to clear: " + e.getMessage());
+            Log.e(TAG, "Error fetching orders to clear for " + userDocId + ": " + e.getMessage());
             if (callback != null) callback.onComplete(false);
         });
     }

@@ -104,12 +104,17 @@ public class PaymentActivity extends AppCompatActivity {
         if (username == null || username.trim().isEmpty()) {
             com.google.firebase.auth.FirebaseUser cu = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
             if (cu != null) {
-                if (cu.getDisplayName() != null && !cu.getDisplayName().isEmpty()) {
-                    username = cu.getDisplayName();
-                } else if (cu.getEmail() != null) {
+                if (cu.getDisplayName() != null && !cu.getDisplayName().trim().isEmpty()) {
+                    username = cu.getDisplayName().trim();
+                } else if (cu.getEmail() != null && !cu.getEmail().trim().isEmpty()) {
                     username = cu.getEmail().split("@")[0];
+                } else {
+                    username = cu.getUid();
                 }
             }
+        }
+        if (username == null || username.trim().isEmpty()) {
+            username = "guest_user";
         }
 
         // Receive totals passed from CartActivity
@@ -365,7 +370,7 @@ public class PaymentActivity extends AppCompatActivity {
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(navigateToConfirm, 2000);
 
         // ── Save orders to Firestore, clear cart, THEN navigate to confirm ──
-        if (cartList != null && !cartList.isEmpty() && username != null && !username.trim().isEmpty()) {
+        if (cartList != null && !cartList.isEmpty()) {
             dbHelper.placeOrders(username, cartList, deliveryFee, success -> {
                 navigateToConfirm.run();
             });
